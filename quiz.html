@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cyber Arcade | Interrogation Room (Quiz)</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        /* ===== HOW TO PLAY BANNER ===== */
+        .how-to-banner {
+            background: linear-gradient(135deg, rgba(255,215,0,0.06), rgba(179,0,255,0.04));
+            border: 1px solid rgba(255,215,0,0.25);
+            border-radius: 14px;
+            padding: 1.2rem 1.5rem;
+            margin-bottom: 1.5rem;
+            display: flex; align-items: flex-start; gap: 15px;
+            position: relative; overflow: hidden;
+        }
+        .how-to-banner::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+            background: linear-gradient(90deg, #ffd700, var(--neon-blue), #ffd700);
+            background-size: 200% auto; animation: gradientFlow 3s linear infinite;
+        }
+        .how-to-icon {
+            width: 44px; height: 44px; border-radius: 50%;
+            background: rgba(255,215,0,0.12); border: 1px solid #ffd700;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.2rem; color: #ffd700; flex-shrink: 0;
+        }
+        .how-to-content h4 { color: #fff; font-size: 0.9rem; font-family: var(--font-heading); letter-spacing: 1px; margin-bottom: 0.4rem; }
+        .how-to-steps-inline { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+        .step-chip {
+            background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 20px; padding: 4px 12px; font-size: 0.74rem;
+            color: rgba(255,255,255,0.8); display: flex; align-items: center; gap: 6px;
+        }
+        .step-chip .chip-num {
+            width: 18px; height: 18px; border-radius: 50%; background: #ffd700;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.65rem; font-weight: 700; color: #000; flex-shrink: 0;
+        }
+        .tip-tag {
+            display: inline-flex; align-items: center; gap: 5px;
+            background: rgba(255,215,0,0.08); border: 1px solid rgba(255,215,0,0.2);
+            border-radius: 6px; padding: 4px 10px; font-size: 0.75rem; color: #ffd700; margin-top: 8px;
+        }
+        .ai-badge-inline {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 4px 12px; background: rgba(179,0,255,0.12);
+            border: 1px solid rgba(179,0,255,0.4); border-radius: 20px;
+            font-size: 0.75rem; color: var(--neon-blue); font-family: var(--font-heading); letter-spacing: 1px; margin-bottom: 1rem;
+        }
+
+        /* ===== QUIZ STYLES ===== */
+        .quiz-container {
+            position: relative; background: rgba(16,20,26,0.95);
+            border: 1px solid var(--neon-blue); border-radius: 10px;
+            padding: 2rem; margin-top: 1.5rem; box-shadow: var(--box-glow);
+        }
+        .timer-bar {
+            width: 100%; height: 10px; background: rgba(0,0,0,0.5);
+            border-radius: 5px; margin-bottom: 2rem; overflow: hidden;
+            border: 1px solid rgba(0,221,255,0.2);
+        }
+        .timer-fill {
+            height: 100%; width: 100%; background: var(--neon-green);
+            transition: width 1s linear, background-color 0.5s ease;
+        }
+        .timer-fill.warning { background: #ffd700; }
+        .timer-fill.danger { background: var(--neon-red); }
+        .question-text { font-size: 1.2rem; margin-bottom: 2rem; color: #fff; min-height: 80px; }
+        .options-grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
+        .option-btn {
+            background: transparent; color: var(--text-main);
+            border: 1px solid rgba(255,255,255,0.15); padding: 14px;
+            border-radius: 8px; cursor: pointer; font-family: var(--font-body);
+            font-size: 0.95rem; text-align: left; transition: all 0.2s;
+            display: flex; align-items: center;
+        }
+        .option-btn:hover { border-color: var(--neon-blue); background: rgba(0,221,255,0.08); }
+        .option-btn i { margin-right: 12px; color: var(--neon-blue); font-size: 1.1rem; }
+        .option-btn.correct { background: rgba(0,255,65,0.15); border-color: var(--neon-green); color: #fff; }
+        .option-btn.incorrect { background: rgba(255,0,60,0.15); border-color: var(--neon-red); color: #fff; }
+        .quiz-stats { display: flex; justify-content: space-between; margin-bottom: 1rem; font-family: var(--font-heading); color: var(--text-muted); }
+        #next-btn { display: none; margin-top: 1.5rem; width: 100%; }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="navbar">
+            <div class="logo"><i class="fas fa-gamepad"></i> CYBER ARCADE</div>
+            <ul class="nav-links">
+                <li><a href="index.html">Home</a></li>
+                <li><a href="leaderboard.html">Leaderboard</a></li>
+            </ul>
+            <div class="user-snippet">
+                <i class="fas fa-user-astronaut"></i>
+                <span class="user-name-display">Guest</span>
+                <span class="user-xp"><span class="user-xp-display">0 XP</span></span>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <div class="game-container" style="max-width: 700px;">
+            <div class="game-header">
+                <h2><i class="fas fa-clipboard-question" style="color:#ffd700"></i> Interrogation Room</h2>
+                <div class="xp-reward"><i class="fas fa-bolt"></i> Reward: 200 XP</div>
+            </div>
+
+            <!-- AI Badge -->
+            <div style="text-align:center; margin-bottom: 1rem;">
+                <span class="ai-badge-inline"><i class="fas fa-robot"></i> AI QUESTION ENGINE — RANKED MODE</span>
+            </div>
+
+            <!-- ===== HOW TO PLAY (shown only on intro) ===== -->
+            <div id="intro-screen">
+                <div class="how-to-banner">
+                    <div class="how-to-icon"><i class="fas fa-info"></i></div>
+                    <div class="how-to-content" style="flex:1">
+                        <h4>HOW TO PLAY — INTERROGATION ROOM</h4>
+                        <div class="how-to-steps-inline">
+                            <span class="step-chip"><span class="chip-num">1</span> Press Start to begin</span>
+                            <span class="step-chip"><span class="chip-num">2</span> Read the question carefully</span>
+                            <span class="step-chip"><span class="chip-num">3</span> Click your answer before time runs out</span>
+                            <span class="step-chip"><span class="chip-num">4</span> Get instant feedback per question</span>
+                            <span class="step-chip"><span class="chip-num">5</span> Score determines your XP reward</span>
+                        </div>
+                        <div class="tip-tag"><i class="fas fa-lightbulb"></i> Tip: Topics include phishing, SQL injection, network attacks & passwords!</div>
+                    </div>
+                </div>
+
+                <div style="margin: 2rem 0; font-size: 4rem; color: var(--neon-blue); text-align:center;"><i class="fas fa-clipboard-check"></i></div>
+                <p style="text-align:center; color: var(--text-muted); margin-bottom: 2rem;">Prove your cybersecurity knowledge. Answer quickly for maximum XP multipliers!</p>
+                <div style="text-align:center;">
+                    <button class="btn-neon" id="start-btn">⚡ Initiate Quiz Sequence</button>
+                </div>
+            </div>
+
+            <div id="quiz-screen" style="display: none;">
+                <div class="quiz-stats">
+                    <span>Question <span id="q-curr">1</span>/<span id="q-total">5</span></span>
+                    <span>Score: <span id="q-score" style="color: var(--neon-green);">0</span></span>
+                </div>
+
+                <div class="timer-bar">
+                    <div class="timer-fill" id="timer-fill"></div>
+                </div>
+
+                <div class="quiz-container">
+                    <div class="question-text" id="question-text"></div>
+                    <div class="options-grid" id="options-grid"></div>
+                </div>
+
+                <button class="btn-neon btn-neon-green" id="next-btn">Next Sequence ›</button>
+            </div>
+        </div>
+    </main>
+
+    <script src="js/main.js"></script>
+    <script src="js/quiz.js"></script>
+</body>
+</html>

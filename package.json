@@ -1,0 +1,11 @@
+{
+  "name": "game-application",
+  "version": "1.0.0",
+  "description": "Cyber Arcade",
+  "scripts": {
+    "start": "npx --yes http-server . -c-1 -p 8080"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}

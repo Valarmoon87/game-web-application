@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cyber Arcade | Global Rankings</title>
+    <meta name="description" content="Cyber Arcade live leaderboard — see where you rank against all operatives globally.">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .lb-hero {
+            text-align: center;
+            margin-bottom: 2.5rem;
+        }
+
+        .lb-hero p {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            margin-top: 0.5rem;
+        }
+
+        .lb-tabs {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-bottom: 2rem;
+        }
+
+        .lb-tab {
+            padding: 8px 20px;
+            border-radius: 30px;
+            border: 1px solid rgba(255,255,255,0.15);
+            background: rgba(255,255,255,0.04);
+            color: var(--text-muted);
+            cursor: pointer;
+            font-family: var(--font-heading);
+            font-size: 0.75rem;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            transition: all 0.2s ease;
+        }
+
+        .lb-tab.active {
+            border-color: var(--neon-blue);
+            color: var(--neon-blue);
+            background: rgba(179,0,255,0.1);
+            box-shadow: 0 0 10px rgba(179,0,255,0.2);
+        }
+
+        .lb-tab:hover:not(.active) {
+            border-color: rgba(255,255,255,0.3);
+            color: #fff;
+        }
+
+        .leaderboard-container {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 16px;
+            overflow: hidden;
+            max-width: 900px;
+            margin: 0 auto;
+            backdrop-filter: blur(10px);
+        }
+
+        /* Top 3 podium */
+        .podium-section {
+            display: flex;
+            justify-content: center;
+            align-items: stretch;
+            gap: 15px;
+            padding: 2rem 2rem 0;
+            margin-bottom: 2rem;
+        }
+
+        .podium-card {
+            flex: 1; max-width: 220px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 12px;
+            text-align: center;
+            padding: 1.2rem 1rem;
+            border: 1px solid rgba(255,255,255,0.08);
+            position: relative;
+            transition: transform 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .podium-card:hover { transform: translateY(-4px); }
+
+        .podium-card.rank-1 {
+            border-color: rgba(255,215,0,0.4);
+            background: linear-gradient(180deg, rgba(255,215,0,0.06), rgba(0,0,0,0.4));
+            box-shadow: 0 0 20px rgba(255,215,0,0.08);
+        }
+        .podium-card.rank-2 {
+            border-color: rgba(192,192,192,0.3);
+            background: linear-gradient(180deg, rgba(192,192,192,0.05), rgba(0,0,0,0.4));
+        }
+        .podium-card.rank-3 {
+            border-color: rgba(205,127,50,0.3);
+            background: linear-gradient(180deg, rgba(205,127,50,0.05), rgba(0,0,0,0.4));
+        }
+
+        .podium-medal {
+            font-size: 2rem;
+            display: block;
+        }
+
+        .podium-avatar {
+            width: 44px; height: 44px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.2rem; border: 2px solid;
+            flex-shrink: 0;
+        }
+        .rank-1 .podium-avatar { border-color: #ffd700; background: rgba(255,215,0,0.1); color: #ffd700; }
+        .rank-2 .podium-avatar { border-color: #c0c0c0; background: rgba(192,192,192,0.1); color: #c0c0c0; }
+        .rank-3 .podium-avatar { border-color: #cd7f32; background: rgba(205,127,50,0.1); color: #cd7f32; }
+
+        .podium-name { font-size: 0.78rem; color: #fff; font-weight: 600; word-break: break-all; }
+        .podium-xp   { font-size: 0.72rem; color: var(--neon-green); font-family: var(--font-heading); }
+        .podium-gift-tag {
+            display: inline-flex; align-items: center; gap: 4px;
+            background: rgba(255,215,0,0.1); border: 1px solid rgba(255,215,0,0.3);
+            border-radius: 20px; padding: 2px 9px; font-size: 0.63rem;
+            color: #ffd700; font-family: var(--font-heading); margin-top: 2px;
+            white-space: nowrap;
+        }
+
+        /* Table */
+        .lb-table-wrap { padding: 0 1.5rem 1.5rem; }
+
+        .leaderboard-table {
+            width: 100%; border-collapse: collapse;
+        }
+
+        .leaderboard-table th {
+            padding: 12px 15px; text-align: left;
+            color: var(--neon-blue); font-family: var(--font-heading);
+            text-transform: uppercase; font-size: 0.75rem; letter-spacing: 1.5px;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+        }
+
+        .leaderboard-table td {
+            padding: 12px 15px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            transition: all 0.2s;
+        }
+
+        .leaderboard-table tbody tr {
+            transition: all 0.2s;
+        }
+
+        .leaderboard-table tbody tr:hover {
+            background: rgba(0,221,255,0.04);
+        }
+
+        .rank-badge {
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 30px; height: 30px; border-radius: 50%;
+            font-weight: 700; font-size: 0.85rem; font-family: var(--font-heading);
+        }
+        .rank-badge.gold   { background: rgba(255,215,0,0.15); color: #ffd700;   border: 1px solid rgba(255,215,0,0.4); }
+        .rank-badge.silver { background: rgba(192,192,192,0.1); color: #c0c0c0; border: 1px solid rgba(192,192,192,0.3); }
+        .rank-badge.bronze { background: rgba(205,127,50,0.1); color: #cd7f32; border: 1px solid rgba(205,127,50,0.3); }
+        .rank-badge.normal { background: rgba(255,255,255,0.05); color: var(--text-muted); border: 1px solid rgba(255,255,255,0.1); }
+
+        .user-cell { display: flex; align-items: center; gap: 12px; }
+        .user-avatar {
+            width: 36px; height: 36px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1rem; flex-shrink: 0;
+        }
+
+        .level-chip {
+            display: inline-block; padding: 2px 10px; border-radius: 20px;
+            font-size: 0.7rem; color: var(--neon-blue);
+            background: rgba(179,0,255,0.1); border: 1px solid rgba(179,0,255,0.3);
+        }
+
+        .xp-col { font-family: var(--font-heading); color: var(--neon-green); font-weight: 700; text-align: right; }
+        .games-col { color: var(--text-muted); font-size: 0.85rem; text-align: center; }
+
+        .highlight-me {
+            background: rgba(0,255,65,0.06) !important;
+            outline: 1px solid rgba(0,255,65,0.2);
+        }
+
+        .online-indicator {
+            width: 7px; height: 7px; border-radius: 50%; background: #00ff41;
+            display: inline-block; animation: dot-pulse 1.5s infinite;
+            margin-right: 5px; vertical-align: middle;
+        }
+        @keyframes dot-pulse {
+            0%, 100% { opacity: 1; } 50% { opacity: 0.3; }
+        }
+
+        .you-badge {
+            background: rgba(0,255,65,0.15); border: 1px solid var(--neon-green);
+            color: var(--neon-green); padding: 1px 8px; border-radius: 10px;
+            font-size: 0.65rem; font-family: var(--font-heading); letter-spacing: 1px;
+        }
+        /* Live count strip */
+        .lb-live-strip {
+            display: flex; align-items: center; justify-content: center; gap: 10px;
+            padding: 10px; background: rgba(0,229,255,0.04);
+            border-bottom: 1px solid rgba(0,229,255,0.1);
+            font-size: 0.8rem; color: var(--text-muted);
+        }
+
+        /* Leaderboard Gift Banner */
+        .lb-gift-banner {
+            display: flex; align-items: center; gap: 14px;
+            background: linear-gradient(135deg, rgba(255,215,0,0.07), rgba(179,0,255,0.07));
+            border: 1px solid rgba(255,215,0,0.25);
+            border-radius: 14px; padding: 1rem 1.5rem;
+            margin-bottom: 2rem; cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative; overflow: hidden;
+        }
+        .lb-gift-banner:hover { border-color: rgba(255,215,0,0.5); transform: translateY(-2px); box-shadow: 0 8px 30px rgba(255,215,0,0.15); }
+        .lb-gift-banner::before {
+            content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 2px;
+            background: linear-gradient(90deg, transparent, #ffd700, transparent);
+            animation: giftScan 3s linear infinite;
+        }
+        @keyframes giftScan { to { left: 200%; } }
+        .lb-gift-icon { font-size: 2.2rem; flex-shrink: 0; animation: giftFloat 2s ease-in-out infinite; }
+        @keyframes giftFloat { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+        .lb-gift-text h3 { font-family: var(--font-heading); font-size: 0.95rem; color: #ffd700; letter-spacing: 1.5px; margin-bottom: 3px; }
+        .lb-gift-text p  { font-size: 0.8rem; color: var(--text-muted); }
+        .lb-gift-claim-btn {
+            margin-left: auto; padding: 8px 18px;
+            background: linear-gradient(135deg, rgba(255,215,0,0.2), rgba(179,0,255,0.15));
+            border: 1px solid rgba(255,215,0,0.4); border-radius: 8px;
+            color: #ffd700; font-family: var(--font-heading); font-size: 0.7rem;
+            letter-spacing: 1px; cursor: pointer; transition: all 0.2s; flex-shrink: 0;
+        }
+        .lb-gift-claim-btn:hover { background: rgba(255,215,0,0.3); box-shadow: 0 0 12px rgba(255,215,0,0.3); }
+
+        /* Rank gift tags on podium */
+        .podium-gift-tag {
+            display: inline-flex; align-items: center; gap: 5px;
+            background: rgba(255,215,0,0.1); border: 1px solid rgba(255,215,0,0.3);
+            border-radius: 20px; padding: 3px 10px; font-size: 0.68rem;
+            color: #ffd700; font-family: var(--font-heading); margin-top: 5px;
+        }
+
+        /* Gift popup */
+        #lb-gift-popup {
+            position: fixed; inset: 0; z-index: 9999;
+            display: flex; align-items: center; justify-content: center;
+            background: rgba(0,0,0,0.88); backdrop-filter: blur(12px);
+            opacity: 0; pointer-events: none; transition: opacity 0.3s;
+        }
+        #lb-gift-popup.show { opacity: 1; pointer-events: auto; }
+        .gift-popup-panel {
+            background: linear-gradient(135deg, rgba(15,10,40,0.99), rgba(11,7,26,0.99));
+            border: 1px solid rgba(255,215,0,0.4); border-radius: 24px;
+            padding: 2.5rem 2rem 2rem; max-width: 500px; width: 94%;
+            text-align: center; position: relative;
+            box-shadow: 0 0 60px rgba(255,215,0,0.25), 0 30px 60px rgba(0,0,0,0.9);
+            animation: giftPopIn 0.5s cubic-bezier(0.175,0.885,0.32,1.275) both;
+        }
+        @keyframes giftPopIn { from { opacity:0; transform: scale(0.7) translateY(30px); } to { opacity:1; transform: scale(1) translateY(0); } }
+        .gift-popup-close {
+            position: absolute; top: 1rem; right: 1rem;
+            width: 32px; height: 32px; border-radius: 50%;
+            border: 1px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.05);
+            color: rgba(255,255,255,0.6); cursor: pointer;
+            display: flex; align-items: center; justify-content: center; transition: all 0.2s;
+        }
+        .gift-popup-close:hover { background: rgba(255,0,123,0.2); border-color: #ff007b; color: #ff007b; }
+        .gift-popup-trophies { font-size: 3.5rem; margin-bottom: 1rem; }
+        .gift-popup-title { font-family: var(--font-heading); font-size: 1.4rem; color: #ffd700; letter-spacing: 3px; margin-bottom: 0.5rem; text-shadow: 0 0 20px rgba(255,215,0,0.8); }
+        .gift-popup-sub { color: rgba(255,255,255,0.6); font-size: 0.85rem; margin-bottom: 1.5rem; }
+        .rank-gift-cards { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-bottom: 1.5rem; }
+        .rank-gift-card {
+            flex: 1; min-width: 120px; max-width: 140px;
+            border-radius: 14px; padding: 1rem 0.8rem;
+            border: 1px solid; text-align: center;
+            transition: all 0.3s;
+        }
+        .rank-gift-card.gold-rank { background: rgba(255,215,0,0.07); border-color: rgba(255,215,0,0.35); }
+        .rank-gift-card.silver-rank { background: rgba(192,192,192,0.05); border-color: rgba(192,192,192,0.3); }
+        .rank-gift-card.bronze-rank { background: rgba(205,127,50,0.07); border-color: rgba(205,127,50,0.3); }
+        .rank-gift-card.top10-rank { background: rgba(0,229,255,0.05); border-color: rgba(0,229,255,0.25); }
+        .rg-medal { font-size: 2rem; margin-bottom: 8px; }
+        .rg-rank { font-family: var(--font-heading); font-size: 0.65rem; letter-spacing: 1px; margin-bottom: 6px; }
+        .rg-xp { font-family: var(--font-heading); font-size: 1.1rem; font-weight: 900; }
+        .rg-label { font-size: 0.65rem; color: rgba(255,255,255,0.5); margin-top: 4px; }
+        .rank-gift-card.gold-rank .rg-rank { color: #ffd700; }
+        .rank-gift-card.gold-rank .rg-xp { color: #ffd700; text-shadow: 0 0 10px #ffd700; }
+        .rank-gift-card.silver-rank .rg-rank { color: #c0c0c0; }
+        .rank-gift-card.silver-rank .rg-xp { color: #c0c0c0; text-shadow: 0 0 10px #c0c0c0; }
+        .rank-gift-card.bronze-rank .rg-rank { color: #cd7f32; }
+        .rank-gift-card.bronze-rank .rg-xp { color: #cd7f32; text-shadow: 0 0 10px #cd7f32; }
+        .rank-gift-card.top10-rank .rg-rank { color: #00e5ff; }
+        .rank-gift-card.top10-rank .rg-xp { color: #00e5ff; text-shadow: 0 0 10px #00e5ff; }
+        .gift-claim-big-btn {
+            width: 100%; padding: 14px;
+            background: linear-gradient(135deg, #b300ff, #ffd700);
+            color: #fff; border: none; border-radius: 12px;
+            font-family: var(--font-heading); font-size: 0.95rem; font-weight: 700;
+            letter-spacing: 2px; cursor: pointer; transition: all 0.3s;
+            box-shadow: 0 4px 20px rgba(255,215,0,0.3);
+        }
+        .gift-claim-big-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(255,215,0,0.5); }
+        .gift-claim-big-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+        .already-claimed-note { font-size: 0.78rem; color: var(--neon-green); margin-top: 10px; }
+        .gift-sparkles { position: absolute; inset: 0; pointer-events: none; overflow: hidden; border-radius: 24px; }
+        .g-sparkle { position: absolute; border-radius: 50%; animation: gSparkleFly 1.5s ease-out forwards; }
+        @keyframes gSparkleFly { 0% { opacity:1; transform:translate(0,0) scale(1); } 100% { opacity:0; transform:translate(var(--tx),var(--ty)) scale(0); } }
+        main {
+            max-width: 960px;
+            margin: 0 auto;
+            padding: 2rem 1.5rem;
+        }
+
+        .lb-hero { text-align:center; margin-bottom:2rem; }
+        .lb-gift-banner, .lb-tabs { max-width: 900px; margin-left: auto; margin-right: auto; }
+        .lb-gift-banner { margin-bottom: 1.5rem; }
+        .lb-tabs { margin-bottom: 1.5rem; }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="navbar">
+            <div class="logo"><i class="fas fa-gamepad"></i> CYBER ARCADE</div>
+            <ul class="nav-links">
+                <li><a href="index.html">Home</a></li>
+                <li><a href="leaderboard.html" class="active">Leaderboard</a></li>
+                <li><a href="profile.html">Profile</a></li>
+            </ul>
+            <div class="user-snippet">
+                <i class="fas fa-user-astronaut"></i>
+                <span class="user-name-display">Guest</span>
+                <span class="user-xp"><span class="user-xp-display">0 XP</span></span>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <div class="lb-hero">
+            <h1 class="section-title">Global <span>Rankings</span></h1>
+            <p><span class="online-indicator"></span> <span id="lb-online-count">89</span> operatives ranked globally · Updates in real-time</p>
+        </div>
+
+        <!-- Leaderboard Gift Banner -->
+        <div class="lb-gift-banner" onclick="showGiftPopup()" id="lb-gift-banner">
+            <span class="lb-gift-icon">🏆</span>
+            <div class="lb-gift-text">
+                <h3>LEADERBOARD GIFTS — WEEKLY REWARDS</h3>
+                <p>Top-ranked operatives earn bonus XP every week. Claim your rank reward now!</p>
+            </div>
+            <button class="lb-gift-claim-btn" id="lb-banner-btn">
+                <i class="fas fa-gift"></i> Claim Gift
+            </button>
+        </div>
+
+        <div class="lb-tabs">
+            <div class="lb-tab active" onclick="switchTab(this, 'all')">All Time</div>
+            <div class="lb-tab" onclick="switchTab(this, 'weekly')">This Week</div>
+            <div class="lb-tab" onclick="switchTab(this, 'me')">My Rank</div>
+        </div>
+        
+        <div class="leaderboard-container">
+            <div class="lb-live-strip">
+                <span class="online-indicator"></span>
+                <span>Live rankings — <strong id="lb-count">0</strong> players on the board</span>
+            </div>
+
+            <!-- Top 3 Podium -->
+            <div class="podium-section" id="podium-section">
+                <!-- Injected by JS -->
+            </div>
+
+            <!-- Rest of leaderboard -->
+            <div class="lb-table-wrap">
+                <table class="leaderboard-table">
+                    <thead>
+                        <tr>
+                            <th style="width:60px">Rank</th>
+                            <th>Operative</th>
+                            <th>Level</th>
+                            <th style="text-align:center">Games</th>
+                            <th style="text-align:right">Total XP</th>
+                        </tr>
+                    </thead>
+                    <tbody id="lb-body">
+                        <!-- Populated via JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <!-- Leaderboard Gift Popup -->
+    <div id="lb-gift-popup">
+        <div class="gift-popup-panel">
+            <div class="gift-sparkles" id="gift-sparkles"></div>
+            <button class="gift-popup-close" onclick="closeGiftPopup()"><i class="fas fa-times"></i></button>
+            <div class="gift-popup-trophies">🏆</div>
+            <div class="gift-popup-title">LEADERBOARD GIFTS</div>
+            <p class="gift-popup-sub">Weekly bonus XP awarded to top-ranked operatives.<br>Your current rank determines your reward!</p>
+            <div class="rank-gift-cards">
+                <div class="rank-gift-card gold-rank">
+                    <div class="rg-medal">🥇</div>
+                    <div class="rg-rank">RANK #1</div>
+                    <div class="rg-xp">+1000 XP</div>
+                    <div class="rg-label">Weekly Champion</div>
+                </div>
+                <div class="rank-gift-card silver-rank">
+                    <div class="rg-medal">🥈</div>
+                    <div class="rg-rank">RANK #2</div>
+                    <div class="rg-xp">+600 XP</div>
+                    <div class="rg-label">Elite Operative</div>
+                </div>
+                <div class="rank-gift-card bronze-rank">
+                    <div class="rg-medal">🥉</div>
+                    <div class="rg-rank">RANK #3</div>
+                    <div class="rg-xp">+350 XP</div>
+                    <div class="rg-label">Shadow Runner</div>
+                </div>
+                <div class="rank-gift-card top10-rank">
+                    <div class="rg-medal">⚡</div>
+                    <div class="rg-rank">TOP 10</div>
+                    <div class="rg-xp">+150 XP</div>
+                    <div class="rg-label">Rising Agent</div>
+                </div>
+            </div>
+            <div id="my-rank-display" style="background:rgba(0,0,0,0.4);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:10px 16px;margin-bottom:1.2rem;font-size:0.85rem;color:var(--text-muted);">
+                Checking your rank...
+            </div>
+            <button class="gift-claim-big-btn" id="claim-rank-gift-btn" onclick="claimRankGift()">
+                <i class="fas fa-hand-sparkles"></i> Claim Weekly Gift
+            </button>
+            <p class="already-claimed-note" id="already-claimed-note" style="display:none;">
+                <i class="fas fa-check-circle"></i> Gift already claimed this week — come back next week!
+            </p>
+        </div>
+    </div>
+
+    <script src="js/main.js"></script>
+    <script>
+        const MEDALS = ['🥇', '🥈', '🥉'];
+        const AVATAR_COLORS = [
+            'rgba(0,229,255,0.15)', 'rgba(179,0,255,0.15)', 'rgba(0,255,65,0.15)',
+            'rgba(255,215,0,0.15)', 'rgba(255,0,123,0.15)'
+        ];
+
+        // Rank gift config
+        const RANK_GIFTS = {
+            1: { icon: '🥇', xp: 1000, label: 'Weekly Champion Gift', badge: 'Weekly Champion' },
+            2: { icon: '🥈', xp: 600,  label: 'Elite Operative Gift', badge: 'Elite Operative' },
+            3: { icon: '🥉', xp: 350,  label: 'Shadow Runner Gift',   badge: 'Shadow Runner' },
+            top10: { icon: '⚡', xp: 150, label: 'Rising Agent Gift', badge: null }
+        };
+
+        function getRankBadgeClass(i) {
+            if (i === 0) return 'gold';
+            if (i === 1) return 'silver';
+            if (i === 2) return 'bronze';
+            return 'normal';
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            renderLeaderboard();
+            checkLeaderboardGifts();
+        });
+
+        function switchTab(el, tab) {
+            document.querySelectorAll('.lb-tab').forEach(t => t.classList.remove('active'));
+            el.classList.add('active');
+            renderLeaderboard(tab);
+        }
+
+        function renderLeaderboard(tab = 'all') {
+            const tbody = document.getElementById('lb-body');
+            const podium = document.getElementById('podium-section');
+            tbody.innerHTML = '';
+            podium.innerHTML = '';
+
+            let lb = JSON.parse(localStorage.getItem('cyber_leaderboard')) || [];
+            let currentUser = JSON.parse(localStorage.getItem('cyber_user'))?.username;
+
+            // Add current user if not in lb
+            const userInLb = lb.find(u => u.username === currentUser);
+            if (!userInLb && currentUser) {
+                let uData = JSON.parse(localStorage.getItem('cyber_user'));
+                lb.push({ username: uData.username, xp: uData.xp, gamesPlayed: uData.gamesPlayed });
+            }
+
+            lb.sort((a, b) => b.xp - a.xp);
+
+            // If "me" tab, scroll to user row
+            document.getElementById('lb-count').textContent = lb.length;
+            document.getElementById('lb-online-count').textContent = lb.length + Math.floor(Math.random() * 20) + 40;
+
+            // Render Podium (top 3)
+            const top3 = lb.slice(0, 3);
+            const podiumOrder = top3.length >= 3 ? [top3[1], top3[0], top3[2]] : top3; // Silver, Gold, Bronze order visually
+            const podiumRanks = top3.length >= 3 ? [2, 1, 3] : [1, 2, 3];
+
+            podiumOrder.forEach((user, vi) => {
+                if (!user) return;
+                const actualRank = podiumRanks[vi];
+                const div = document.createElement('div');
+                div.className = `podium-card rank-${actualRank}`;
+                const isMe = user.username === currentUser;
+                const giftInfo = RANK_GIFTS[actualRank];
+                div.innerHTML = `
+                    <span class="podium-medal">${MEDALS[actualRank - 1] || ''}</span>
+                    <div class="podium-avatar"><i class="fas fa-user-astronaut"></i></div>
+                    <div class="podium-name">${user.username}${isMe ? ' <small style="color:var(--neon-green)">(You)</small>' : ''}</div>
+                    <div class="podium-xp">${user.xp.toLocaleString()} XP</div>
+                    <div class="podium-gift-tag">${giftInfo.icon} +${giftInfo.xp} XP weekly</div>
+                `;
+                podium.appendChild(div);
+            });
+
+            // Render table (rank 4+)
+            lb.forEach((user, index) => {
+                const tr = document.createElement('tr');
+                if (user.username === currentUser) tr.classList.add('highlight-me');
+                if (tab === 'me' && user.username !== currentUser) {
+                    tr.style.opacity = '0.4';
+                }
+
+                const level = getCurrentLevel(user.xp);
+                const isMe = user.username === currentUser;
+                const isOnline = Math.random() > 0.6; // simulate some online
+                const avatarBg = AVATAR_COLORS[index % AVATAR_COLORS.length];
+                const badgeClass = getRankBadgeClass(index);
+                const rankGift = index < 3 ? RANK_GIFTS[index + 1] : (index < 10 ? RANK_GIFTS.top10 : null);
+
+                tr.innerHTML = `
+                    <td><span class="rank-badge ${badgeClass}">${index < 3 ? MEDALS[index] : '#' + (index + 1)}</span></td>
+                    <td>
+                        <div class="user-cell">
+                            <div class="user-avatar" style="background:${avatarBg}; border: 1px solid rgba(255,255,255,0.15); color:#fff">
+                                <i class="fas fa-robot"></i>
+                            </div>
+                            <div>
+                                <div style="display:flex; align-items:center; gap:6px;">
+                                    ${isOnline ? '<span class="online-indicator"></span>' : ''}
+                                    <span style="color:#fff; font-size:0.9rem">${user.username}</span>
+                                    ${isMe ? '<span class="you-badge">YOU</span>' : ''}
+                                    ${rankGift ? `<span style="font-size:0.65rem;color:#ffd700;background:rgba(255,215,0,0.08);border:1px solid rgba(255,215,0,0.25);border-radius:8px;padding:1px 7px;">${rankGift.icon} +${rankGift.xp} XP</span>` : ''}
+                                </div>
+                                <div style="font-size:0.7rem; color:var(--text-muted);">Operative #${String(1000 + index).padStart(4, '0')}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td><span class="level-chip">${level}</span></td>
+                    <td class="games-col">${user.gamesPlayed || 0}</td>
+                    <td class="xp-col">${user.xp.toLocaleString()} XP</td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            // If me tab, scroll to highlighted row
+            if (tab === 'me') {
+                const myRow = tbody.querySelector('.highlight-me');
+                if (myRow) setTimeout(() => myRow.scrollIntoView({ behavior: 'smooth', block: 'center' }), 100);
+            }
+        }
+
+        // ===== LEADERBOARD GIFT SYSTEM =====
+        function getUserRank() {
+            const currentUser = JSON.parse(localStorage.getItem('cyber_user'))?.username;
+            if (!currentUser) return -1;
+            let lb = JSON.parse(localStorage.getItem('cyber_leaderboard')) || [];
+            const userInLb = lb.find(u => u.username === currentUser);
+            if (!userInLb) {
+                const uData = JSON.parse(localStorage.getItem('cyber_user'));
+                if (uData) lb.push({ username: uData.username, xp: uData.xp, gamesPlayed: uData.gamesPlayed });
+            }
+            lb.sort((a, b) => b.xp - a.xp);
+            return lb.findIndex(u => u.username === currentUser) + 1; // 1-indexed
+        }
+
+        function getGiftForRank(rank) {
+            if (rank === 1) return RANK_GIFTS[1];
+            if (rank === 2) return RANK_GIFTS[2];
+            if (rank === 3) return RANK_GIFTS[3];
+            if (rank <= 10) return RANK_GIFTS.top10;
+            return null;
+        }
+
+        function checkLeaderboardGifts() {
+            const rank = getUserRank();
+            const gift = getGiftForRank(rank);
+            const banner = document.getElementById('lb-gift-banner');
+            const bannerBtn = document.getElementById('lb-banner-btn');
+
+            if (!gift) {
+                // Not in top 10
+                if (bannerBtn) bannerBtn.innerHTML = '<i class="fas fa-lock"></i> Top 10 Only';
+            } else {
+                const weekKey = 'lb_gift_week_' + getWeekKey();
+                const claimed = localStorage.getItem(weekKey);
+                if (claimed) {
+                    if (bannerBtn) bannerBtn.innerHTML = '<i class="fas fa-check"></i> Claimed';
+                    if (bannerBtn) bannerBtn.style.opacity = '0.5';
+                }
+            }
+        }
+
+        function getWeekKey() {
+            const d = new Date();
+            const jan1 = new Date(d.getFullYear(), 0, 1);
+            const week = Math.ceil((((d - jan1) / 86400000) + jan1.getDay() + 1) / 7);
+            return d.getFullYear() + '_' + week;
+        }
+
+        function showGiftPopup() {
+            const rank = getUserRank();
+            const gift = getGiftForRank(rank);
+            const weekKey = 'lb_gift_week_' + getWeekKey();
+            const claimed = localStorage.getItem(weekKey);
+            const claimBtn = document.getElementById('claim-rank-gift-btn');
+            const claimedNote = document.getElementById('already-claimed-note');
+            const rankDisplay = document.getElementById('my-rank-display');
+
+            if (rank > 0) {
+                if (gift) {
+                    rankDisplay.innerHTML = `<span style="color:#fff">Your rank: <strong style="color:#ffd700">#${rank}</strong></span> — You qualify for <strong style="color:#ffd700">${gift.icon} +${gift.xp} XP</strong> this week!`;
+                } else {
+                    rankDisplay.innerHTML = `<span style="color:var(--text-muted)">Your rank: <strong style="color:#00e5ff">#${rank}</strong> — Reach <strong>Top 10</strong> to earn rank gifts!</span>`;
+                }
+            } else {
+                rankDisplay.innerHTML = `<span style="color:var(--text-muted)">Play games to appear on the leaderboard and earn weekly gifts!</span>`;
+            }
+
+            if (claimed || !gift) {
+                claimBtn.disabled = true;
+                claimBtn.innerHTML = '<i class="fas fa-lock"></i> ' + (claimed ? 'Already Claimed' : 'Not Eligible');
+                if (claimed) claimedNote.style.display = 'block';
+            } else {
+                claimBtn.disabled = false;
+                claimBtn.innerHTML = `<i class="fas fa-hand-sparkles"></i> Claim ${gift.icon} +${gift.xp} XP`;
+                claimedNote.style.display = 'none';
+            }
+
+            document.getElementById('lb-gift-popup').classList.add('show');
+            document.body.style.overflow = 'hidden';
+            spawnGiftSparkles();
+        }
+
+        function closeGiftPopup() {
+            document.getElementById('lb-gift-popup').classList.remove('show');
+            document.body.style.overflow = '';
+        }
+
+        function claimRankGift() {
+            const rank = getUserRank();
+            const gift = getGiftForRank(rank);
+            if (!gift) return;
+
+            const weekKey = 'lb_gift_week_' + getWeekKey();
+            if (localStorage.getItem(weekKey)) return;
+
+            // Award XP
+            const userData = JSON.parse(localStorage.getItem('cyber_user'));
+            if (userData) {
+                userData.xp = (userData.xp || 0) + gift.xp;
+                if (gift.badge && !userData.badges.includes(gift.badge)) {
+                    userData.badges.push(gift.badge);
+                }
+                localStorage.setItem('cyber_user', JSON.stringify(userData));
+
+                const cu = JSON.parse(localStorage.getItem('cyber_current_user'));
+                if (cu) {
+                    cu.xp = userData.xp;
+                    localStorage.setItem('cyber_current_user', JSON.stringify(cu));
+                }
+            }
+
+            localStorage.setItem(weekKey, '1');
+
+            const claimBtn = document.getElementById('claim-rank-gift-btn');
+            const claimedNote = document.getElementById('already-claimed-note');
+            claimBtn.innerHTML = `<i class="fas fa-check"></i> +${gift.xp} XP Credited!`;
+            claimBtn.style.background = 'linear-gradient(135deg, #00ff41, #00e5ff)';
+            claimBtn.disabled = true;
+            claimedNote.style.display = 'block';
+
+            spawnGiftSparkles();
+            checkLeaderboardGifts();
+
+            // Re-render with updated XP
+            setTimeout(renderLeaderboard, 800);
+        }
+
+        function spawnGiftSparkles() {
+            const container = document.getElementById('gift-sparkles');
+            if (!container) return;
+            const colors = ['#ffd700','#b300ff','#00e5ff','#ff007b','#00ff41'];
+            for (let i = 0; i < 25; i++) {
+                setTimeout(() => {
+                    const s = document.createElement('div');
+                    s.className = 'g-sparkle';
+                    const size = Math.random() * 8 + 4;
+                    s.style.cssText = `
+                        left:${Math.random()*100}%; top:${Math.random()*100}%;
+                        width:${size}px; height:${size}px;
+                        background:${colors[Math.floor(Math.random()*colors.length)]};
+                        --tx:${(Math.random()-0.5)*300}px; --ty:${(Math.random()-0.5)*300}px;
+                        animation-delay:${Math.random()*0.5}s;
+                    `;
+                    container.appendChild(s);
+                    setTimeout(() => s.remove(), 2000);
+                }, i * 60);
+            }
+        }
+
+        // Close on backdrop click
+        document.getElementById('lb-gift-popup').addEventListener('click', (e) => {
+            if (e.target === document.getElementById('lb-gift-popup')) closeGiftPopup();
+        });
+    </script>
+</body>
+</html>

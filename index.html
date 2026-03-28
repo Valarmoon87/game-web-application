@@ -1,0 +1,1355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cyber Arcade | Dashboard</title>
+    <meta name="description" content="Cyber Arcade - AI-powered cybersecurity gaming platform with multi-user leaderboards and interactive challenges.">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        /* ===== REDESIGNED GAME CARDS ===== */
+        .game-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr));
+            gap: 2rem;
+            align-items: stretch;
+        }
+
+        .game-card {
+            position: relative;
+            border-radius: 20px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.4s ease;
+            animation: slideUpFade 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) backwards;
+            animation-delay: calc(var(--anim-order, 0) * 0.1s);
+            height: 420px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .game-card:hover {
+            transform: translateY(-12px) scale(1.02);
+        }
+
+        /* Card Background Image Layer */
+        .card-bg-layer {
+            position: absolute;
+            inset: 0;
+            z-index: 0;
+        }
+
+        .card-bg-layer img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.6s ease, filter 0.4s ease;
+            filter: brightness(0.45) saturate(1.2);
+        }
+
+        .game-card:hover .card-bg-layer img {
+            transform: scale(1.1);
+            filter: brightness(0.6) saturate(1.5);
+        }
+
+        /* Gradient Overlay */
+        .card-gradient {
+            position: absolute;
+            inset: 0;
+            z-index: 1;
+            background: linear-gradient(
+                to bottom,
+                rgba(11, 7, 26, 0.1) 0%,
+                rgba(11, 7, 26, 0.3) 30%,
+                rgba(11, 7, 26, 0.85) 70%,
+                rgba(11, 7, 26, 0.98) 100%
+            );
+        }
+
+        /* Top badges row */
+        .card-top-badges {
+            position: absolute;
+            top: 14px;
+            left: 14px;
+            right: 14px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            z-index: 10;
+        }
+
+        .difficulty-badge {
+            padding: 5px 12px;
+            border-radius: 30px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            font-family: var(--font-heading);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border: 1px solid;
+        }
+
+        .diff-easy   { background: rgba(0, 229, 255, 0.15); border-color: var(--neon-green); color: var(--neon-green); }
+        .diff-medium { background: rgba(255, 215, 0, 0.15); border-color: #ffd700;            color: #ffd700; }
+        .diff-hard   { background: rgba(255, 0, 123, 0.15); border-color: var(--neon-red);    color: var(--neon-red); }
+        .diff-master { background: rgba(179, 0, 255, 0.2);  border-color: var(--neon-blue);   color: var(--neon-blue); }
+
+        .card-right-badges {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 6px;
+        }
+
+        .ai-badge {
+            padding: 4px 10px;
+            border-radius: 30px;
+            font-size: 0.65rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-family: var(--font-heading);
+            backdrop-filter: blur(8px);
+            background: rgba(179, 0, 255, 0.25);
+            border: 1px solid var(--neon-blue);
+            color: var(--neon-blue);
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .ai-badge i { font-size: 0.6rem; }
+
+        .multiplayer-badge {
+            padding: 4px 10px;
+            border-radius: 30px;
+            font-size: 0.65rem;
+            font-weight: 700;
+            font-family: var(--font-heading);
+            backdrop-filter: blur(8px);
+            background: rgba(0, 255, 65, 0.15);
+            border: 1px solid rgba(0, 255, 65, 0.6);
+            color: #00ff41;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            letter-spacing: 0.5px;
+        }
+
+        .pulse-dot {
+            width: 6px;
+            height: 6px;
+            background: #00ff41;
+            border-radius: 50%;
+            animation: dot-pulse 1.5s infinite;
+            flex-shrink: 0;
+        }
+
+        @keyframes dot-pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.4; transform: scale(0.7); }
+        }
+
+        /* Card Main Icon */
+        .card-main-icon {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -60%);
+            z-index: 5;
+            font-size: 4.5rem;
+            color: rgba(255, 255, 255, 0.3);
+            transition: all 0.4s ease;
+            pointer-events: none;
+        }
+
+        .game-card:hover .card-main-icon {
+            color: rgba(0, 221, 255, 0.6);
+            text-shadow: 0 0 30px var(--neon-blue);
+            transform: translate(-50%, -65%) scale(1.15);
+        }
+
+        /* Card Bottom Content */
+        .card-bottom {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            z-index: 10;
+            padding: 1.4rem 1.5rem 1.5rem;
+        }
+
+        .card-category {
+            font-size: 0.65rem;
+            color: var(--neon-green);
+            text-transform: uppercase;
+            letter-spacing: 2.5px;
+            font-family: var(--font-heading);
+            margin-bottom: 0.4rem;
+        }
+
+        .card-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: #ffffff;
+            margin-bottom: 0.5rem;
+            font-family: var(--font-heading);
+            letter-spacing: 1px;
+            text-shadow: 0 2px 8px rgba(0,0,0,0.8);
+        }
+
+        .card-desc {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            line-height: 1.6;
+            margin-bottom: 1rem;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        /* Card Actions Row */
+        .card-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .btn-play {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 11px 16px;
+            background: var(--neon-blue);
+            color: #fff;
+            border: none;
+            border-radius: 10px;
+            font-family: var(--font-heading);
+            font-size: 0.8rem;
+            font-weight: 700;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            box-shadow: 0 4px 15px rgba(179, 0, 255, 0.4);
+        }
+
+        .btn-play:hover {
+            background: #c900ff;
+            box-shadow: 0 6px 25px rgba(179, 0, 255, 0.7);
+            transform: translateY(-2px);
+        }
+
+        .btn-how-to-play {
+            width: 42px;
+            height: 42px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.08);
+            color: rgba(255, 255, 255, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 1rem;
+            backdrop-filter: blur(6px);
+            flex-shrink: 0;
+        }
+
+        .btn-how-to-play:hover {
+            background: rgba(0, 229, 255, 0.2);
+            border-color: var(--neon-green);
+            color: var(--neon-green);
+            box-shadow: 0 0 12px rgba(0, 229, 255, 0.4);
+        }
+
+        /* XP Reward inside card */
+        .card-xp-strip {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            padding: 6px 10px;
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        .xp-reward-sm {
+            font-size: 0.75rem;
+            color: var(--neon-green);
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-family: var(--font-heading);
+        }
+
+        .online-players {
+            font-size: 0.7rem;
+            color: rgba(255, 255, 255, 0.5);
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .online-players .player-avatars {
+            display: flex;
+        }
+
+        .player-avatar {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            border: 1px solid rgba(255,255,255,0.3);
+            margin-left: -5px;
+            background: linear-gradient(135deg, var(--neon-blue), var(--neon-green));
+            font-size: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+
+        /* Scan line effect on hover */
+        .card-scan-line {
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--neon-blue), transparent);
+            z-index: 15;
+            transform: translateX(-100%);
+            transition: transform 0s;
+        }
+
+        .game-card:hover .card-scan-line {
+            animation: scan-sweep 0.5s ease forwards;
+        }
+
+        @keyframes scan-sweep {
+            from { transform: translateX(-100%); }
+            to { transform: translateX(100%); }
+        }
+
+        /* ===== INSTRUCTIONS MODAL ===== */
+        .instructions-modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.9);
+            backdrop-filter: blur(10px);
+            z-index: 5000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        .instructions-modal.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .instructions-panel {
+            background: linear-gradient(135deg, rgba(20, 15, 50, 0.98), rgba(11, 7, 26, 0.98));
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 20px;
+            max-width: 560px;
+            width: 92%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.8), 0 0 40px rgba(179, 0, 255, 0.2);
+            transform: scale(0.85) translateY(20px);
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            position: relative;
+        }
+
+        .instructions-modal.active .instructions-panel {
+            transform: scale(1) translateY(0);
+        }
+
+        .instructions-header {
+            padding: 2rem 2rem 1.5rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            position: sticky;
+            top: 0;
+            background: linear-gradient(135deg, rgba(20, 15, 50, 0.98), rgba(11, 7, 26, 0.98));
+            border-radius: 20px 20px 0 0;
+            z-index: 1;
+        }
+
+        .instructions-header .modal-icon-ring {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            border: 2px solid var(--neon-blue);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            color: var(--neon-blue);
+            margin: 0 auto 1rem;
+            box-shadow: 0 0 20px rgba(179, 0, 255, 0.4);
+            background: rgba(179, 0, 255, 0.1);
+        }
+
+        .instructions-header h2 {
+            font-size: 1.5rem;
+            text-align: center;
+            color: #fff;
+            font-family: var(--font-heading);
+            letter-spacing: 2px;
+            margin-bottom: 0.3rem;
+        }
+
+        .instructions-header .inst-subtitle {
+            text-align: center;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        .close-modal-btn {
+            position: absolute;
+            top: 1.2rem;
+            right: 1.2rem;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.05);
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 1rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+
+        .close-modal-btn:hover {
+            background: rgba(255, 0, 123, 0.2);
+            border-color: var(--neon-red);
+            color: var(--neon-red);
+        }
+
+        .instructions-body {
+            padding: 1.5rem 2rem 2rem;
+        }
+
+        .how-to-steps {
+            list-style: none;
+            padding: 0;
+            margin: 0 0 1.5rem;
+        }
+
+        .how-to-steps li {
+            display: flex;
+            gap: 14px;
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            align-items: flex-start;
+        }
+
+        .how-to-steps li:last-child { border-bottom: none; }
+
+        .step-number {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--neon-blue), #6600cc);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: #fff;
+            flex-shrink: 0;
+            font-family: var(--font-heading);
+            margin-top: 2px;
+        }
+
+        .step-text {
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.85);
+            line-height: 1.6;
+        }
+
+        .step-text strong {
+            color: var(--neon-green);
+        }
+
+        .tips-section {
+            background: rgba(0, 229, 255, 0.05);
+            border: 1px solid rgba(0, 229, 255, 0.2);
+            border-radius: 10px;
+            padding: 1rem 1.2rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .tips-section h4 {
+            font-size: 0.8rem;
+            color: var(--neon-green);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 0.7rem;
+            font-family: var(--font-heading);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .tips-section ul {
+            padding-left: 1.2rem;
+        }
+
+        .tips-section ul li {
+            font-size: 0.82rem;
+            color: var(--text-muted);
+            margin-bottom: 4px;
+            line-height: 1.5;
+        }
+
+        .inst-reward-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 10px;
+            padding: 10px 15px;
+            margin-bottom: 1.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.07);
+        }
+
+        .inst-reward-bar span {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        .inst-reward-bar .xp-reward {
+            font-size: 0.9rem;
+            font-family: var(--font-heading);
+        }
+
+        .btn-start-game {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, var(--neon-blue), #6600cc);
+            color: #fff;
+            border: none;
+            border-radius: 12px;
+            font-family: var(--font-heading);
+            font-size: 1rem;
+            font-weight: 700;
+            letter-spacing: 2px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: block;
+            text-align: center;
+            box-shadow: 0 4px 20px rgba(179, 0, 255, 0.4);
+        }
+
+        .btn-start-game:hover {
+            background: linear-gradient(135deg, #c700ff, var(--neon-blue));
+            box-shadow: 0 6px 30px rgba(179, 0, 255, 0.7);
+            transform: translateY(-2px);
+        }
+
+        /* ===== LIVE LOBBY SECTION ===== */
+        .lobby-section {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            background: rgba(0, 229, 255, 0.04);
+            border: 1px solid rgba(0, 229, 255, 0.12);
+            border-radius: 14px;
+            padding: 1rem 1.5rem;
+            margin-bottom: 2.5rem;
+        }
+
+        .lobby-icon {
+            font-size: 1.5rem;
+            color: var(--neon-green);
+            animation: cyber-pulse-green 2s infinite;
+        }
+
+        .lobby-text {
+            flex: 1;
+        }
+
+        .lobby-text h3 {
+            font-size: 0.9rem;
+            color: #fff;
+            font-family: var(--font-heading);
+            margin-bottom: 2px;
+            letter-spacing: 1px;
+        }
+
+        .lobby-text p {
+            font-size: 0.78rem;
+            color: var(--text-muted);
+        }
+
+        .lobby-count {
+            font-size: 1.8rem;
+            font-weight: 700;
+            font-family: var(--font-heading);
+            color: var(--neon-green);
+            text-shadow: 0 0 10px var(--neon-green);
+        }
+
+        .lobby-count small {
+            font-size: 0.6rem;
+            color: var(--text-muted);
+            display: block;
+            text-align: center;
+            font-family: var(--font-body);
+        }
+
+        /* ===== AI HINT SECTION ON CARD ===== */
+        .card-ai-hint {
+            font-size: 0.7rem;
+            color: rgba(179, 0, 255, 0.8);
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="navbar">
+            <div class="logo">
+                <i class="fas fa-gamepad"></i> CYBER ARCADE
+            </div>
+            <ul class="nav-links">
+                <li><a href="index.html" class="active">Home</a></li>
+                <li><a href="leaderboard.html">Leaderboard</a></li>
+                <li><a href="profile.html">Profile</a></li>
+            </ul>
+            <div class="user-snippet">
+                <i class="fas fa-user-astronaut"></i>
+                <span class="user-name-display">Guest</span>
+                <span class="user-xp"><span class="user-xp-display">0 XP</span></span>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <div class="dashboard-hero">
+            <h1 class="section-title">Welcome Back, <span class="user-name-display">Operative</span></h1>
+            <p style="color: var(--text-muted); text-align: center; margin-bottom: 2rem;">Current Status: <span style="color: var(--neon-green); text-shadow: 0 0 5px var(--neon-green);">● ONLINE</span> | Ranked: <span class="user-level-display">Initialize...</span></p>
+            
+            <div class="xp-progress-container" style="max-width: 600px; margin: 0 auto 2.5rem; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; padding: 4px; position: relative; overflow: hidden;">
+                <div id="global-xp-bar" style="height: 12px; background: linear-gradient(90deg, var(--neon-blue), var(--neon-green)); width: 50%; border-radius: 20px; box-shadow: 0 0 15px var(--neon-blue); transition: width 1s ease-out;"></div>
+                <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 0.7rem; font-weight: bold; text-shadow: 0 1px 2px #000;">STABILITY LEVEL: <span id="xp-percent">0</span>%</div>
+            </div>
+        </div>
+
+        <!-- Live Lobby -->
+        <div class="lobby-section">
+            <i class="fas fa-users lobby-icon"></i>
+            <div class="lobby-text">
+                <h3>LIVE ARCADE LOBBY</h3>
+                <p>Players currently active across all missions</p>
+            </div>
+            <div class="lobby-count">
+                <span id="live-player-count">—</span>
+                <small>ONLINE</small>
+            </div>
+        </div>
+
+        <h2 class="section-title" style="font-size: 1.8rem; margin-bottom: 2rem;">MISSION <span>LOGS</span></h2>
+        
+        <div class="game-grid">
+
+            <!-- ===== Game 1: Cyber Tac Toe ===== -->
+            <div class="game-card" style="--anim-order: 1">
+                <div class="card-bg-layer">
+                    <img src="assets/cyber_tac_toe_1774544953687.png" alt="Cyber Tac Toe">
+                </div>
+                <div class="card-gradient"></div>
+                <div class="card-scan-line"></div>
+                <div class="card-top-badges">
+                    <span class="difficulty-badge diff-easy">Easy</span>
+                    <div class="card-right-badges">
+                        <span class="ai-badge"><i class="fas fa-robot"></i> AI Opponent</span>
+                        <span class="multiplayer-badge"><div class="pulse-dot"></div> 1v1</span>
+                    </div>
+                </div>
+                <i class="fas fa-hashtag card-main-icon"></i>
+                <div class="card-bottom">
+                    <div class="card-category">Grid Strategy</div>
+                    <h3 class="card-title">Cyber Tac Toe</h3>
+                    <p class="card-desc">Warm up your cognitive networks. Defeat the AI grid module using strategy and prediction.</p>
+                    <div class="card-xp-strip">
+                        <span class="xp-reward-sm"><i class="fas fa-bolt"></i> +100 XP</span>
+                        <span class="online-players">
+                            <div class="player-avatars">
+                                <div class="player-avatar"><i class="fas fa-user" style="font-size:0.45rem"></i></div>
+                                <div class="player-avatar"><i class="fas fa-user" style="font-size:0.45rem"></i></div>
+                                <div class="player-avatar"><i class="fas fa-user" style="font-size:0.45rem"></i></div>
+                            </div>
+                            <span id="players-ttt">12</span> playing
+                        </span>
+                    </div>
+                    <div class="card-actions">
+                        <a href="tictactoe.html" class="btn-play"><i class="fas fa-play"></i> Play Now</a>
+                        <button class="btn-how-to-play" onclick="showInstructions('ttt')" title="How to Play"><i class="fas fa-question"></i></button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===== Game 2: Data Matrix Memory ===== -->
+            <div class="game-card" style="--anim-order: 2">
+                <div class="card-bg-layer">
+                    <img src="assets/cyber_memory_1774545092650.png" alt="Memory Game">
+                </div>
+                <div class="card-gradient"></div>
+                <div class="card-scan-line"></div>
+                <div class="card-top-badges">
+                    <span class="difficulty-badge diff-easy">Easy</span>
+                    <div class="card-right-badges">
+                        <span class="ai-badge"><i class="fas fa-brain"></i> AI Shuffler</span>
+                        <span class="multiplayer-badge"><div class="pulse-dot"></div> Solo</span>
+                    </div>
+                </div>
+                <i class="fas fa-microchip card-main-icon"></i>
+                <div class="card-bottom">
+                    <div class="card-category">Memory Protocol</div>
+                    <h3 class="card-title">Data Matrix Memory</h3>
+                    <p class="card-desc">Match pairs of cybersecurity concepts. Train your firewall response memory system.</p>
+                    <div class="card-xp-strip">
+                        <span class="xp-reward-sm"><i class="fas fa-bolt"></i> +150 XP</span>
+                        <span class="online-players">
+                            <div class="player-avatars">
+                                <div class="player-avatar"><i class="fas fa-user" style="font-size:0.45rem"></i></div>
+                                <div class="player-avatar"><i class="fas fa-user" style="font-size:0.45rem"></i></div>
+                            </div>
+                            <span id="players-mem">8</span> playing
+                        </span>
+                    </div>
+                    <div class="card-actions">
+                        <a href="memory.html" class="btn-play"><i class="fas fa-play"></i> Play Now</a>
+                        <button class="btn-how-to-play" onclick="showInstructions('memory')" title="How to Play"><i class="fas fa-question"></i></button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===== Game 3: Interrogation Room ===== -->
+            <div class="game-card" style="--anim-order: 3">
+                <div class="card-bg-layer">
+                    <img src="assets/cyber_quiz_1774545143852.png" alt="Cyber Quiz">
+                </div>
+                <div class="card-gradient"></div>
+                <div class="card-scan-line"></div>
+                <div class="card-top-badges">
+                    <span class="difficulty-badge diff-medium">Medium</span>
+                    <div class="card-right-badges">
+                        <span class="ai-badge"><i class="fas fa-robot"></i> AI Questions</span>
+                        <span class="multiplayer-badge"><div class="pulse-dot"></div> Ranked</span>
+                    </div>
+                </div>
+                <i class="fas fa-clipboard-question card-main-icon"></i>
+                <div class="card-bottom">
+                    <div class="card-category">Knowledge Test</div>
+                    <h3 class="card-title">Interrogation Room</h3>
+                    <p class="card-desc">Test your skills against rapid-fire questions on phishing, SQLi, and password security.</p>
+                    <div class="card-xp-strip">
+                        <span class="xp-reward-sm"><i class="fas fa-bolt"></i> +200 XP</span>
+                        <span class="online-players">
+                            <div class="player-avatars">
+                                <div class="player-avatar"><i class="fas fa-user" style="font-size:0.45rem"></i></div>
+                                <div class="player-avatar"><i class="fas fa-user" style="font-size:0.45rem"></i></div>
+                                <div class="player-avatar"><i class="fas fa-user" style="font-size:0.45rem"></i></div>
+                                <div class="player-avatar"><i class="fas fa-user" style="font-size:0.45rem"></i></div>
+                            </div>
+                            <span id="players-quiz">21</span> playing
+                        </span>
+                    </div>
+                    <div class="card-actions">
+                        <a href="quiz.html" class="btn-play"><i class="fas fa-play"></i> Play Now</a>
+                        <button class="btn-how-to-play" onclick="showInstructions('quiz')" title="How to Play"><i class="fas fa-question"></i></button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===== Game 4: Threat Hunter ===== -->
+            <div class="game-card" style="--anim-order: 4">
+                <div class="card-bg-layer">
+                    <img src="assets/threat_hunter_1774545392463.png" alt="Phishing Game">
+                </div>
+                <div class="card-gradient"></div>
+                <div class="card-scan-line"></div>
+                <div class="card-top-badges">
+                    <span class="difficulty-badge diff-medium">Medium</span>
+                    <div class="card-right-badges">
+                        <span class="ai-badge"><i class="fas fa-eye"></i> AI Threat Gen</span>
+                        <span class="multiplayer-badge"><div class="pulse-dot"></div> Solo</span>
+                    </div>
+                </div>
+                <i class="fas fa-fish card-main-icon"></i>
+                <div class="card-bottom">
+                    <div class="card-category">Phishing Detection</div>
+                    <h3 class="card-title">Threat Hunter</h3>
+                    <p class="card-desc">Analyze emails and domains. Expose phishing attempts before they breach the perimeter.</p>
+                    <div class="card-xp-strip">
+                        <span class="xp-reward-sm"><i class="fas fa-bolt"></i> +250 XP</span>
+                        <span class="online-players">
+                            <div class="player-avatars">
+                                <div class="player-avatar"><i class="fas fa-user" style="font-size:0.45rem"></i></div>
+                                <div class="player-avatar"><i class="fas fa-user" style="font-size:0.45rem"></i></div>
+                            </div>
+                            <span id="players-phish">6</span> playing
+                        </span>
+                    </div>
+                    <div class="card-actions">
+                        <a href="phishing.html" class="btn-play"><i class="fas fa-play"></i> Play Now</a>
+                        <button class="btn-how-to-play" onclick="showInstructions('phishing')" title="How to Play"><i class="fas fa-question"></i></button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===== Game 5: Zero Day Clicker ===== -->
+            <div class="game-card" style="--anim-order: 5">
+                <div class="card-bg-layer">
+                    <img src="assets/zero_day_1774545526299.png" alt="Zero Day">
+                </div>
+                <div class="card-gradient"></div>
+                <div class="card-scan-line"></div>
+                <div class="card-top-badges">
+                    <span class="difficulty-badge diff-hard">Hard</span>
+                    <div class="card-right-badges">
+                        <span class="ai-badge"><i class="fas fa-bug"></i> AI Vulnerabilities</span>
+                        <span class="multiplayer-badge"><div class="pulse-dot"></div> Timed</span>
+                    </div>
+                </div>
+                <i class="fas fa-satellite-dish card-main-icon"></i>
+                <div class="card-bottom">
+                    <div class="card-category">Vulnerability Scan</div>
+                    <h3 class="card-title">Zero Day Clicker</h3>
+                    <p class="card-desc">Identify weaknesses in a deployed UI before the timer runs out. Every click counts.</p>
+                    <div class="card-xp-strip">
+                        <span class="xp-reward-sm"><i class="fas fa-bolt"></i> +300 XP</span>
+                        <span class="online-players">
+                            <div class="player-avatars">
+                                <div class="player-avatar"><i class="fas fa-user" style="font-size:0.45rem"></i></div>
+                                <div class="player-avatar"><i class="fas fa-user" style="font-size:0.45rem"></i></div>
+                                <div class="player-avatar"><i class="fas fa-user" style="font-size:0.45rem"></i></div>
+                            </div>
+                            <span id="players-vuln">15</span> playing
+                        </span>
+                    </div>
+                    <div class="card-actions">
+                        <a href="vulnerability.html" class="btn-play"><i class="fas fa-play"></i> Play Now</a>
+                        <button class="btn-how-to-play" onclick="showInstructions('vuln')" title="How to Play"><i class="fas fa-question"></i></button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===== Game 6: Brute Force Core ===== -->
+            <div class="game-card" style="--anim-order: 6">
+                <div class="card-bg-layer">
+                    <img src="assets/brute_force_1774545544763.png" alt="Brute Force">
+                </div>
+                <div class="card-gradient"></div>
+                <div class="card-scan-line"></div>
+                <div class="card-top-badges">
+                    <span class="difficulty-badge diff-hard">Hard</span>
+                    <div class="card-right-badges">
+                        <span class="ai-badge"><i class="fas fa-lock"></i> AI Defender</span>
+                        <span class="multiplayer-badge"><div class="pulse-dot"></div> Solo</span>
+                    </div>
+                </div>
+                <i class="fas fa-unlock-keyhole card-main-icon"></i>
+                <div class="card-bottom">
+                    <div class="card-category">Password Attack</div>
+                    <h3 class="card-title">Brute Force Core</h3>
+                    <p class="card-desc">Simulate dictionary and brute-force attacks on user passwords. Learn system entropy.</p>
+                    <div class="card-xp-strip">
+                        <span class="xp-reward-sm"><i class="fas fa-bolt"></i> +350 XP</span>
+                        <span class="online-players">
+                            <div class="player-avatars">
+                                <div class="player-avatar"><i class="fas fa-user" style="font-size:0.45rem"></i></div>
+                                <div class="player-avatar"><i class="fas fa-user" style="font-size:0.45rem"></i></div>
+                            </div>
+                            <span id="players-brute">9</span> playing
+                        </span>
+                    </div>
+                    <div class="card-actions">
+                        <a href="bruteforce.html" class="btn-play"><i class="fas fa-play"></i> Play Now</a>
+                        <button class="btn-how-to-play" onclick="showInstructions('brute')" title="How to Play"><i class="fas fa-question"></i></button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===== Game 7: Crypto Decoder ===== -->
+            <div class="game-card" style="--anim-order: 7">
+                <div class="card-bg-layer">
+                    <img src="https://images.unsplash.com/photo-1526304640581-d334cdbbf45e?auto=format&fit=crop&q=80&w=800" alt="Crypto Decoder">
+                </div>
+                <div class="card-gradient"></div>
+                <div class="card-scan-line"></div>
+                <div class="card-top-badges">
+                    <span class="difficulty-badge diff-master">Master</span>
+                    <div class="card-right-badges">
+                        <span class="ai-badge"><i class="fas fa-key"></i> AI Encoder</span>
+                        <span class="multiplayer-badge"><div class="pulse-dot"></div> Ranked</span>
+                    </div>
+                </div>
+                <i class="fas fa-key card-main-icon"></i>
+                <div class="card-bottom">
+                    <div class="card-category">Cryptography</div>
+                    <h3 class="card-title">Crypto Decoder</h3>
+                    <p class="card-desc">Decrypt intercepted transmissions using Base64, Caesar, and custom hashing logic.</p>
+                    <div class="card-xp-strip">
+                        <span class="xp-reward-sm"><i class="fas fa-bolt"></i> +500 XP</span>
+                        <span class="online-players">
+                            <div class="player-avatars">
+                                <div class="player-avatar"><i class="fas fa-user" style="font-size:0.45rem"></i></div>
+                                <div class="player-avatar"><i class="fas fa-user" style="font-size:0.45rem"></i></div>
+                                <div class="player-avatar"><i class="fas fa-user" style="font-size:0.45rem"></i></div>
+                                <div class="player-avatar"><i class="fas fa-user" style="font-size:0.45rem"></i></div>
+                            </div>
+                            <span id="players-crypto">18</span> playing
+                        </span>
+                    </div>
+                    <div class="card-actions">
+                        <a href="crypto.html" class="btn-play"><i class="fas fa-play"></i> Play Now</a>
+                        <button class="btn-how-to-play" onclick="showInstructions('crypto')" title="How to Play"><i class="fas fa-question"></i></button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===== Game 8: Neural Archer ===== -->
+            <div class="game-card" style="--anim-order: 8">
+                <div class="card-bg-layer">
+                    <img src="assets/cyber_archery.png" alt="Neural Archer">
+                </div>
+                <div class="card-gradient"></div>
+                <div class="card-scan-line"></div>
+                <div class="card-top-badges">
+                    <span class="difficulty-badge diff-medium">Medium</span>
+                    <div class="card-right-badges">
+                        <span class="ai-badge"><i class="fas fa-crosshairs"></i> Physics Engine</span>
+                        <span class="multiplayer-badge"><div class="pulse-dot"></div> Timed</span>
+                    </div>
+                </div>
+                <i class="fas fa-crosshairs card-main-icon"></i>
+                <div class="card-bottom">
+                    <div class="card-category">Precision Targeting</div>
+                    <h3 class="card-title">Neural Archer</h3>
+                    <p class="card-desc">Hit moving cyber-targets with precision arrows. Wind physics & special multiplier targets.</p>
+                    <div class="card-xp-strip">
+                        <span class="xp-reward-sm"><i class="fas fa-bolt"></i> +400 XP</span>
+                        <span class="online-players">
+                            <div class="player-avatars">
+                                <div class="player-avatar"><i class="fas fa-user" style="font-size:0.45rem"></i></div>
+                                <div class="player-avatar"><i class="fas fa-user" style="font-size:0.45rem"></i></div>
+                            </div>
+                            <span id="players-archery">7</span> playing
+                        </span>
+                    </div>
+                    <div class="card-actions">
+                        <a href="archery.html" class="btn-play"><i class="fas fa-play"></i> Play Now</a>
+                        <button class="btn-how-to-play" onclick="showInstructions('archery')" title="How to Play"><i class="fas fa-question"></i></button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===== Game 9: Bubble Matrix Blaster ===== -->
+            <div class="game-card" style="--anim-order: 9">
+                <div class="card-bg-layer">
+                    <img src="https://images.unsplash.com/photo-1614854262318-831574f15f1f?auto=format&fit=crop&q=80&w=800" alt="Bubble Shooter">
+                </div>
+                <div class="card-gradient"></div>
+                <div class="card-scan-line"></div>
+                <div class="card-top-badges">
+                    <span class="difficulty-badge diff-easy">Easy</span>
+                    <div class="card-right-badges">
+                        <span class="ai-badge"><i class="fas fa-circle"></i> Pattern AI</span>
+                        <span class="multiplayer-badge"><div class="pulse-dot"></div> Arcade</span>
+                    </div>
+                </div>
+                <i class="fas fa-circle-nodes card-main-icon"></i>
+                <div class="card-bottom">
+                    <div class="card-category">Bubble Arcade</div>
+                    <h3 class="card-title">Bubble Matrix Blaster</h3>
+                    <p class="card-desc">Match 3+ neon bubbles to burst the cyber-matrix. Chain combos for massive XP rewards!</p>
+                    <div class="card-xp-strip">
+                        <span class="xp-reward-sm"><i class="fas fa-bolt"></i> +300 XP</span>
+                        <span class="online-players">
+                            <div class="player-avatars">
+                                <div class="player-avatar"><i class="fas fa-user" style="font-size:0.45rem"></i></div>
+                                <div class="player-avatar"><i class="fas fa-user" style="font-size:0.45rem"></i></div>
+                                <div class="player-avatar"><i class="fas fa-user" style="font-size:0.45rem"></i></div>
+                            </div>
+                            <span id="players-bubble">11</span> playing
+                        </span>
+                    </div>
+                    <div class="card-actions">
+                        <a href="bubble.html" class="btn-play"><i class="fas fa-play"></i> Play Now</a>
+                        <button class="btn-how-to-play" onclick="showInstructions('bubble')" title="How to Play"><i class="fas fa-question"></i></button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===== Game 10: Match the Design ===== -->
+            <div class="game-card" style="--anim-order: 10">
+                <div class="card-bg-layer">
+                    <img src="https://images.unsplash.com/photo-1558618666-fcd25c85cd64?auto=format&fit=crop&q=80&w=800" alt="Match the Design">
+                </div>
+                <div class="card-gradient"></div>
+                <div class="card-scan-line"></div>
+                <div class="card-top-badges">
+                    <span class="difficulty-badge diff-medium">Medium</span>
+                    <div class="card-right-badges">
+                        <span class="ai-badge"><i class="fas fa-palette"></i> Pattern AI</span>
+                        <span class="multiplayer-badge"><div class="pulse-dot"></div> Timed</span>
+                    </div>
+                </div>
+                <i class="fas fa-palette card-main-icon"></i>
+                <div class="card-bottom">
+                    <div class="card-category">Visual Matching</div>
+                    <h3 class="card-title">Match the Design</h3>
+                    <p class="card-desc">Reconstruct encrypted visual patterns by matching grid colors under time pressure.</p>
+                    <div class="card-xp-strip">
+                        <span class="xp-reward-sm"><i class="fas fa-bolt"></i> +250 XP</span>
+                        <span class="online-players">
+                            <div class="player-avatars">
+                                <div class="player-avatar"><i class="fas fa-user" style="font-size:0.45rem"></i></div>
+                                <div class="player-avatar"><i class="fas fa-user" style="font-size:0.45rem"></i></div>
+                            </div>
+                            <span id="players-match">5</span> playing
+                        </span>
+                    </div>
+                    <div class="card-actions">
+                        <a href="matchdesign.html" class="btn-play"><i class="fas fa-play"></i> Play Now</a>
+                        <button class="btn-how-to-play" onclick="showInstructions('matchdesign')" title="How to Play"><i class="fas fa-question"></i></button>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <footer>
+        <p>&copy; 2026 Cyber Arcade Platform - Advanced Gamification Systems | AI-Enhanced · Multi-User</p>
+    </footer>
+
+    <!-- ===== INSTRUCTIONS MODAL ===== -->
+    <div id="instructions-modal" class="instructions-modal" onclick="closeInstructionsOnOverlay(event)">
+        <div class="instructions-panel">
+            <div class="instructions-header">
+                <button class="close-modal-btn" onclick="closeInstructions()"><i class="fas fa-times"></i></button>
+                <div class="modal-icon-ring" id="inst-icon"><i class="fas fa-gamepad"></i></div>
+                <h2 id="inst-title">Game Instructions</h2>
+                <p class="inst-subtitle" id="inst-subtitle">Learn how to play</p>
+            </div>
+            <div class="instructions-body">
+                <div class="inst-reward-bar">
+                    <span>🎯 Objective</span>
+                    <span class="xp-reward" id="inst-objective">Complete the mission</span>
+                </div>
+                <ol class="how-to-steps" id="inst-steps"></ol>
+                <div class="tips-section">
+                    <h4><i class="fas fa-lightbulb"></i> Pro Tips</h4>
+                    <ul id="inst-tips"></ul>
+                </div>
+                <div class="inst-reward-bar">
+                    <span><i class="fas fa-bolt" style="color:var(--neon-green)"></i> XP Reward</span>
+                    <span class="xp-reward xp-reward-sm" id="inst-xp">+100 XP</span>
+                </div>
+                <a href="#" class="btn-start-game" id="inst-play-btn">Launch Mission <i class="fas fa-arrow-right"></i></a>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/main.js"></script>
+    <script src="js/streaks.js"></script>
+    <script>
+    // ===== INSTRUCTIONS DATA =====
+    const GAME_INSTRUCTIONS = {
+        ttt: {
+            icon: 'fas fa-hashtag',
+            title: 'CYBER TAC TOE',
+            subtitle: 'AI Strategic Grid Combat',
+            objective: 'Get 3 in a row before the AI does',
+            xp: '+100 XP on Win',
+            url: 'tictactoe.html',
+            steps: [
+                { text: 'Select your <strong>AI Difficulty</strong> — Easy (Random), Medium (Defensive), or Hard (Minimax AI).' },
+                { text: 'Click any <strong>empty cell</strong> on the 3×3 grid to place your <strong>Network Node (X)</strong>.' },
+                { text: 'The <strong>AI opponent</strong> responds immediately — it will try to block and counter your moves.' },
+                { text: 'Get <strong>3 in a row</strong> horizontally, vertically, or diagonally to win the grid sector.' },
+                { text: 'A <strong>Draw</strong> earns 20 XP. Win to claim the full 100 XP reward!' }
+            ],
+            tips: [
+                'On HARD mode, the AI uses Minimax — always play the center square first.',
+                'In Medium mode, the AI blocks you but won\'t always play offensively — exploit that.',
+                'Corners are stronger than edges — control corners to force multi-threats.'
+            ]
+        },
+        memory: {
+            icon: 'fas fa-microchip',
+            title: 'DATA MATRIX MEMORY',
+            subtitle: 'Neural Pattern Matching Protocol',
+            objective: 'Match all pairs with minimum moves',
+            xp: '+150 XP on Completion',
+            url: 'memory.html',
+            steps: [
+                { text: 'Cards are arranged face-down in a grid. Each card has a <strong>matching pair</strong> hidden on the board.' },
+                { text: 'Click any card to <strong>flip it over</strong> and reveal the cybersecurity symbol.' },
+                { text: 'Click a <strong>second card</strong> — if they match, both stay revealed. If not, they flip back.' },
+                { text: 'Complete all matches to <strong>decrypt the data matrix</strong> and claim your XP.' },
+                { text: 'Choose <strong>higher levels</strong> for more pairs and faster XP rewards.' }
+            ],
+            tips: [
+                'Focus on remembering where non-matching cards went — don\'t just guess randomly.',
+                'Start from corners — it helps mentally map the grid more efficiently.',
+                'Level 3 (4x6) rewards the most XP but requires a sharp memory.'
+            ]
+        },
+        quiz: {
+            icon: 'fas fa-clipboard-question',
+            title: 'INTERROGATION ROOM',
+            subtitle: 'Rapid-Fire Cybersecurity Quiz',
+            objective: 'Answer all questions with maximum accuracy',
+            xp: '+200 XP on Completion',
+            url: 'quiz.html',
+            steps: [
+                { text: 'Press <strong>Initiate Quiz Sequence</strong> to begin the rapid-fire challenge.' },
+                { text: 'Each question has a <strong>countdown timer</strong> — faster answers may earn bonus XP.' },
+                { text: 'Select the option you think is correct — you\'ll get <strong>instant feedback</strong>.' },
+                { text: 'After each question, the <strong>correct answer is revealed</strong> with an explanation.' },
+                { text: 'Complete all questions and your <strong>final score determines your XP reward</strong>.' }
+            ],
+            tips: [
+                'Don\'t just guess — wrong answers won\'t penalty you, but thinking helps you learn!',
+                'Topics cover phishing, SQL Injection, password security, and network attacks.',
+                'The quiz has multiple difficulty levels — complete all for maximum XP.'
+            ]
+        },
+        phishing: {
+            icon: 'fas fa-fish',
+            title: 'THREAT HUNTER',
+            subtitle: 'AI-Generated Phishing Detection',
+            objective: 'Correctly classify emails as Phishing or Legit',
+            xp: '+250 XP on Completion',
+            url: 'phishing.html',
+            steps: [
+                { text: 'You\'ll receive a series of <strong>simulated emails</strong> — some are phishing attempts, some are legitimate.' },
+                { text: 'Read the email carefully — look at the <strong>sender address, subject, links, and urgency</strong>.' },
+                { text: 'Click <strong>PHISHING ☠️</strong> if you detect red flags, or <strong>LEGITIMATE ✅</strong> if it looks safe.' },
+                { text: 'After each decision you get feedback on what the <strong>red flags</strong> were.' },
+                { text: 'Complete all levels to earn maximum XP — advanced levels include <strong>spoofed legit domains</strong>.' }
+            ],
+            tips: [
+                'Real phishing often mimics trusted brands — always check the full domain carefully.',
+                'Urgent language like "Act Now!" or "Account Suspended" is a major red flag.',
+                'Hover over links to see where they actually lead before clicking in real life.'
+            ]
+        },
+        vuln: {
+            icon: 'fas fa-satellite-dish',
+            title: 'ZERO DAY CLICKER',
+            subtitle: 'AI-Generated Vulnerability Scanner',
+            objective: 'Find all vulnerabilities before time runs out',
+            xp: '+300 XP on Completion',
+            url: 'vulnerability.html',
+            steps: [
+                { text: 'You\'re shown a <strong>simulated web UI</strong> with hidden security vulnerabilities planted by the AI.' },
+                { text: 'Click on elements that look <strong>suspicious or insecure</strong> to flag them as vulnerabilities.' },
+                { text: 'The <strong>timer counts down</strong> — you must identify all vulnerabilities before it hits zero.' },
+                { text: 'Each correct click increases your score; <strong>missed vulnerabilities</strong> reduce your final XP.' },
+                { text: 'Progress through levels for more complex UIs with <strong>more hidden attack surfaces</strong>.' }
+            ],
+            tips: [
+                'Common vulns: exposed form fields, unsecured HTTP links, missing CAPTCHA on logins.',
+                'Look for input fields that accept any text — these are often injection points.',
+                'Higher levels hide vulns in CSS or JavaScript-rendered elements!'
+            ]
+        },
+        brute: {
+            icon: 'fas fa-unlock-keyhole',
+            title: 'BRUTE FORCE CORE',
+            subtitle: 'Password Attack Simulator',
+            objective: 'Crack the password using the right strategy',
+            xp: '+350 XP on Completion',
+            url: 'bruteforce.html',
+            steps: [
+                { text: 'You\'ll be shown a <strong>locked system</strong> — your goal is to crack the password.' },
+                { text: 'Choose your attack method: <strong>Dictionary Attack</strong> (common words) or <strong>Brute Force</strong> (all combos).' },
+                { text: 'Watch the <strong>attack simulation</strong> run — you\'ll see each attempt logged in real-time.' },
+                { text: '<strong>Shorter and simpler passwords</strong> crack faster, teaching you about password entropy.' },
+                { text: 'Upgrade your attack settings to <strong>crack complex passwords</strong> and unlock more XP.' }
+            ],
+            tips: [
+                'Dictionary attacks are fast but only work on weak/common passwords.',
+                'Brute force is exhaustive — time increases exponentially with password length.',
+                'Use this insight to understand why 12+ character random passwords are critical!'
+            ]
+        },
+        crypto: {
+            icon: 'fas fa-key',
+            title: 'CRYPTO DECODER',
+            subtitle: 'Multi-Layer Encryption Cracking',
+            objective: 'Decrypt the intercepted transmission',
+            xp: '+500 XP on Completion',
+            url: 'crypto.html',
+            steps: [
+                { text: 'You receive an <strong>encrypted transmission</strong> — your job is to figure out the cipher used.' },
+                { text: 'Try different cipher modes: <strong>Base64, Caesar, ROT13, or custom hash</strong> decoding.' },
+                { text: 'Enter your decryption key and click <strong>Decode</strong> to attempt to reveal the message.' },
+                { text: 'If the method is wrong, you get a <strong>partial hint</strong> to steer you toward the correct cipher.' },
+                { text: 'Multi-stage levels chain <strong>multiple ciphers together</strong> — decode one layer at a time!' }
+            ],
+            tips: [
+                'Base64 strings end in "==" or "=" as padding — a quick indicator.',
+                'Caesar cipher shifts letters by a fixed number — try shift 13 (ROT13) first.',
+                'Look for patterns in the ciphertext — repeating blocks suggest block ciphers.'
+            ]
+        },
+        archery: {
+            icon: 'fas fa-crosshairs',
+            title: 'NEURAL ARCHER',
+            subtitle: 'Precision Cyber-Targeting Protocol',
+            objective: 'Hit maximum targets with limited arrows',
+            xp: '+400 XP on Completion',
+            url: 'archery.html',
+            steps: [
+                { text: '<strong>Move your mouse</strong> to aim your arrow at the moving cyber-targets on screen.' },
+                { text: '<strong>Hold and release</strong> the mouse button to control draw power — more power = faster arrow.' },
+                { text: 'Hit the <strong>inner rings</strong> for more points — bullseye scores 10 points per hit.' },
+                { text: '<strong>Gold "2x" special targets</strong> double your points — prioritize them!' },
+                { text: 'Watch the <strong>wind indicator</strong> — it drifts your arrow. Account for it when aiming.' }
+            ],
+            tips: [
+                'Higher difficulty = faster targets and stronger wind. Start on Easy to get used to the physics.',
+                'Hit consecutive targets without missing to build a streak bonus.',
+                'Special 2x targets are worth hunting — even an outer ring hit gives more than a bullseye on a normal target.'
+            ]
+        },
+        matchdesign: {
+            icon: 'fas fa-palette',
+            title: 'MATCH THE DESIGN',
+            subtitle: 'Visual Pattern Reconstruction Protocol',
+            objective: 'Recreate the target design pixel-perfectly',
+            xp: '+250 XP on Completion',
+            url: 'matchdesign.html',
+            steps: [
+                { text: 'A <strong>target pattern</strong> is displayed — memorize its colors and layout.' },
+                { text: 'A scrambled grid is shown below — click cells to <strong>cycle through colors</strong> to match the target.' },
+                { text: 'Match <strong>all cells</strong> exactly to complete the design and earn XP.' },
+                { text: 'You have a <strong>limited number of moves</strong> — plan before clicking randomly.' },
+                { text: 'Higher levels use <strong>more colors and larger grids</strong> for greater rewards.' }
+            ],
+            tips: [
+                'Scan the target row by row — work systematically not randomly.',
+                'Each click cycles the cell to the next color — count your clicks to avoid overshooting.',
+                'Finish faster for a time bonus on top of the XP reward!'
+            ]
+        },
+        bubble: {
+            icon: 'fas fa-circle-nodes',
+            title: 'BUBBLE MATRIX BLASTER',
+            subtitle: 'Cyber Pattern Burst Protocol',
+            objective: 'Clear the bubble matrix before it reaches the breach line',
+            xp: '+300 XP on Completion',
+            url: 'bubble.html',
+            steps: [
+                { text: '<strong>Move your mouse</strong> to aim the cannon at the top of the screen.' },
+                { text: '<strong>Click or tap</strong> to fire your current bubble toward the grid above.' },
+                { text: 'Match <strong>3 or more bubbles of the same color</strong> to burst them off the board.' },
+                { text: 'Bursting chains can cause <strong>floating bubbles to drop</strong> — use that for combo bonuses!' },
+                { text: 'The grid pushes down over time — clear it before bubbles <strong>breach the red line</strong>.' }
+            ],
+            tips: [
+                'Bank shots off the walls to reach tricky clusters — the aim line shows predicted paths.',
+                'Floating bubbles drop free when anchored clusters burst — one good shot can clear a lot.',
+                'Check the NEXT bubble preview to plan your shot sequence ahead of time.'
+            ]
+        }
+    };
+
+    function showInstructions(gameId) {
+        const data = GAME_INSTRUCTIONS[gameId];
+        if (!data) return;
+
+        document.getElementById('inst-icon').innerHTML = `<i class="${data.icon}"></i>`;
+        document.getElementById('inst-title').textContent = data.title;
+        document.getElementById('inst-subtitle').textContent = data.subtitle;
+        document.getElementById('inst-objective').textContent = data.objective;
+        document.getElementById('inst-xp').textContent = data.xp;
+        document.getElementById('inst-play-btn').href = data.url;
+
+        const stepsEl = document.getElementById('inst-steps');
+        stepsEl.innerHTML = data.steps.map((step, i) => `
+            <li>
+                <div class="step-number">${i + 1}</div>
+                <div class="step-text">${step.text}</div>
+            </li>
+        `).join('');
+
+        const tipsEl = document.getElementById('inst-tips');
+        tipsEl.innerHTML = data.tips.map(tip => `<li>${tip}</li>`).join('');
+
+        document.getElementById('instructions-modal').classList.add('active');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeInstructions() {
+        document.getElementById('instructions-modal').classList.remove('active');
+        document.body.style.overflow = '';
+    }
+
+    function closeInstructionsOnOverlay(e) {
+        if (e.target === document.getElementById('instructions-modal')) closeInstructions();
+    }
+
+    // Simulated live player counts — update every 15 seconds
+    function updateLivePlayerCounts() {
+        const elements = {
+            'ttt':    'players-ttt',
+            'mem':    'players-mem',
+            'quiz':   'players-quiz',
+            'phish':  'players-phish',
+            'vuln':   'players-vuln',
+            'brute':  'players-brute',
+            'crypto': 'players-crypto',
+            'archery':'players-archery',
+            'bubble': 'players-bubble',
+            'match':  'players-match'
+        };
+        const base = { ttt: 12, mem: 8, quiz: 21, phish: 6, vuln: 15, brute: 9, crypto: 18, archery: 7, bubble: 11, match: 5 };
+
+        let total = 0;
+        Object.keys(elements).forEach(id => {
+            const delta = Math.floor(Math.random() * 7) - 3;
+            const val = Math.max(1, (base[id] || 10) + delta);
+            base[id] = val;
+            total += val;
+            const el = document.getElementById(elements[id]);
+            if (el) el.textContent = val;
+        });
+
+        const liveEl = document.getElementById('live-player-count');
+        if (liveEl) liveEl.textContent = total;
+    }
+
+    updateLivePlayerCounts();
+    setInterval(updateLivePlayerCounts, 15000);
+    </script>
+</body>
+</html>

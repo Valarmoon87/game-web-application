@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cyber Arcade | Memory Protocol</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        /* ===== HOW TO PLAY BANNER ===== */
+        .how-to-banner {
+            background: linear-gradient(135deg, rgba(0, 229, 255, 0.06), rgba(179, 0, 255, 0.04));
+            border: 1px solid rgba(0, 229, 255, 0.25);
+            border-radius: 14px;
+            padding: 1.2rem 1.5rem;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: flex-start;
+            gap: 15px;
+            position: relative;
+            overflow: hidden;
+        }
+        .how-to-banner::before {
+            content: '';
+            position: absolute; top: 0; left: 0; right: 0; height: 2px;
+            background: linear-gradient(90deg, var(--neon-green), var(--neon-blue), var(--neon-green));
+            background-size: 200% auto;
+            animation: gradientFlow 3s linear infinite;
+        }
+        .how-to-icon {
+            width: 44px; height: 44px; border-radius: 50%;
+            background: rgba(0, 229, 255, 0.15);
+            border: 1px solid var(--neon-green);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.2rem; color: var(--neon-green); flex-shrink: 0;
+        }
+        .how-to-content h4 {
+            color: #fff; font-size: 0.9rem; font-family: var(--font-heading);
+            letter-spacing: 1px; margin-bottom: 0.4rem;
+        }
+        .how-to-steps-inline { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+        .step-chip {
+            background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 20px; padding: 4px 12px; font-size: 0.74rem;
+            color: rgba(255,255,255,0.8); display: flex; align-items: center; gap: 6px;
+        }
+        .step-chip .chip-num {
+            width: 18px; height: 18px; border-radius: 50%;
+            background: var(--neon-green); display: flex; align-items: center;
+            justify-content: center; font-size: 0.65rem; font-weight: 700; color: #000; flex-shrink: 0;
+        }
+        .tip-tag {
+            display: inline-flex; align-items: center; gap: 5px;
+            background: rgba(0,255,65,0.08); border: 1px solid rgba(0,255,65,0.2);
+            border-radius: 6px; padding: 4px 10px; font-size: 0.75rem;
+            color: var(--neon-green); margin-top: 8px;
+        }
+        .ai-badge-inline {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 4px 12px; background: rgba(179,0,255,0.12);
+            border: 1px solid rgba(179,0,255,0.4); border-radius: 20px;
+            font-size: 0.75rem; color: var(--neon-blue); font-family: var(--font-heading);
+            letter-spacing: 1px; margin-bottom: 1rem;
+        }
+
+        /* ===== MEMORY BOARD ===== */
+        .memory-board {
+            display: grid;
+            grid-template-columns: repeat(4, 80px);
+            gap: 12px;
+            justify-content: center;
+            margin: 1.5rem auto;
+        }
+        @media (max-width: 500px) {
+            .memory-board { grid-template-columns: repeat(4, 65px); gap: 8px; }
+        }
+        .memory-card {
+            width: 100%; aspect-ratio: 1;
+            position: relative; transform-style: preserve-3d;
+            transition: transform 0.6s cubic-bezier(0.4, 0.0, 0.2, 1); cursor: pointer;
+        }
+        .memory-card.flip { transform: rotateY(180deg); }
+        .memory-card .front-face, .memory-card .back-face {
+            width: 100%; height: 100%; position: absolute;
+            border-radius: 10px; backface-visibility: hidden;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 2.5rem; box-shadow: 0 0 10px rgba(0,0,0,0.5); border: 1px solid;
+        }
+        .memory-card .front-face {
+            transform: rotateY(180deg);
+            background: rgba(16,20,26,0.9); border-color: var(--neon-blue); color: var(--neon-blue);
+        }
+        .memory-card .back-face {
+            background: linear-gradient(135deg, rgba(179,0,255,0.2), rgba(0,229,255,0.1));
+            border-color: rgba(255,255,255,0.2); color: rgba(255,255,255,0.3);
+            font-family: var(--font-heading); font-size: 1.5rem;
+        }
+        .memory-card.matched .front-face {
+            border-color: var(--neon-green); color: var(--neon-green);
+            box-shadow: 0 0 15px rgba(0,255,65,0.3); background: rgba(0,255,65,0.08);
+        }
+        .stats-bar {
+            display: flex; justify-content: space-around;
+            background: rgba(0,0,0,0.5); padding: 10px; border-radius: 10px;
+            border: 1px dotted var(--neon-blue); margin-bottom: 1.5rem;
+            font-family: var(--font-heading);
+        }
+        @keyframes mdPopIn { from { opacity:0; transform: scale(0.7) translateY(20px); } to { opacity:1; transform: scale(1) translateY(0); } }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="navbar">
+            <div class="logo"><i class="fas fa-gamepad"></i> CYBER ARCADE</div>
+            <ul class="nav-links">
+                <li><a href="index.html">Home</a></li>
+                <li><a href="leaderboard.html">Leaderboard</a></li>
+            </ul>
+            <div class="user-snippet">
+                <i class="fas fa-user-astronaut"></i>
+                <span class="user-name-display">Guest</span>
+                <span class="user-xp"><span class="user-xp-display">0 XP</span></span>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <div class="game-container" style="max-width: 700px;">
+            <div class="game-header">
+                <h2><i class="fas fa-microchip" style="color:var(--neon-blue)"></i> Data Matrix Memory</h2>
+                <div class="level-selector">
+                    <select id="memory-level" class="auth-input" style="width: auto; padding: 5px 12px; margin-bottom: 0; font-size: 0.85rem;">
+                        <option value="1">Level 1: 4×4 — Basic</option>
+                        <option value="2">Level 2: 4×5 — Advanced</option>
+                        <option value="3">Level 3: 4×6 — Expert</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- AI Badge -->
+            <div style="text-align:center; margin-bottom: 1rem;">
+                <span class="ai-badge-inline"><i class="fas fa-brain"></i> AI CARD SHUFFLER ACTIVE</span>
+            </div>
+
+            <!-- ===== HOW TO PLAY ===== -->
+            <div class="how-to-banner">
+                <div class="how-to-icon"><i class="fas fa-info"></i></div>
+                <div class="how-to-content" style="flex:1">
+                    <h4>HOW TO PLAY — DATA MATRIX MEMORY</h4>
+                    <div class="how-to-steps-inline">
+                        <span class="step-chip"><span class="chip-num">1</span> Cards start face-down</span>
+                        <span class="step-chip"><span class="chip-num">2</span> Click to reveal a card</span>
+                        <span class="step-chip"><span class="chip-num">3</span> Click 2nd card to match</span>
+                        <span class="step-chip"><span class="chip-num">4</span> Unmatched? They flip back</span>
+                        <span class="step-chip"><span class="chip-num">5</span> Match all pairs to win +150 XP</span>
+                    </div>
+                    <div class="tip-tag"><i class="fas fa-lightbulb"></i> Tip: Memorize where non-matching cards are — every card you see is a clue!</div>
+                </div>
+            </div>
+
+            <div class="stats-bar">
+                <span>Moves: <span id="moves" style="color: var(--neon-blue);">0</span></span>
+                <span>Matches: <span id="matches" style="color: var(--neon-green);">0 / 8</span></span>
+                <span>Time: <span id="timer" style="color: #ffd700;">00:00</span></span>
+                <span>Combo: <span id="combo-display" style="color:var(--neon-blue);font-family:var(--font-heading);font-weight:700;">0</span></span>
+            </div>
+
+            <div class="memory-board" id="memory-board">
+                <!-- Cards injected by JS -->
+            </div>
+
+            <button class="btn-neon" id="restart-btn" style="margin-top: 1rem;">⟳ Reinitialize Array</button>
+        </div>
+    </main>
+
+    <script src="js/main.js"></script>
+    <script src="js/streaks.js"></script>
+    <script src="js/memory.js"></script>
+</body>
+</html>

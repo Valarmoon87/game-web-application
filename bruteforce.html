@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cyber Arcade | Brute Force Core</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        /* ===== HOW TO PLAY BANNER ===== */
+        .how-to-banner {
+            background: linear-gradient(135deg, rgba(0,229,255,0.06), rgba(179,0,255,0.04));
+            border: 1px solid rgba(0,229,255,0.25);
+            border-radius: 14px; padding: 1.2rem 1.5rem; margin-bottom: 1.5rem;
+            display: flex; align-items: flex-start; gap: 15px;
+            position: relative; overflow: hidden;
+        }
+        .how-to-banner::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+            background: linear-gradient(90deg, var(--neon-blue), var(--neon-green), var(--neon-blue));
+            background-size: 200% auto; animation: gradientFlow 3s linear infinite;
+        }
+        .how-to-icon {
+            width: 44px; height: 44px; border-radius: 50%;
+            background: rgba(0,229,255,0.12); border: 1px solid var(--neon-blue);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.2rem; color: var(--neon-blue); flex-shrink: 0;
+        }
+        .how-to-content h4 { color: #fff; font-size: 0.9rem; font-family: var(--font-heading); letter-spacing: 1px; margin-bottom: 0.4rem; }
+        .how-to-steps-inline { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+        .step-chip {
+            background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 20px; padding: 4px 12px; font-size: 0.74rem;
+            color: rgba(255,255,255,0.8); display: flex; align-items: center; gap: 6px;
+        }
+        .step-chip .chip-num {
+            width: 18px; height: 18px; border-radius: 50%; background: var(--neon-blue);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.65rem; font-weight: 700; color: #fff; flex-shrink: 0;
+        }
+        .tip-tag {
+            display: inline-flex; align-items: center; gap: 5px;
+            background: rgba(0,229,255,0.08); border: 1px solid rgba(0,229,255,0.2);
+            border-radius: 6px; padding: 4px 10px; font-size: 0.75rem; color: var(--neon-blue); margin-top: 8px;
+        }
+        .ai-badge-inline {
+            display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px;
+            background: rgba(179,0,255,0.12); border: 1px solid rgba(179,0,255,0.4); border-radius: 20px;
+            font-size: 0.75rem; color: var(--neon-blue); font-family: var(--font-heading); letter-spacing: 1px; margin-bottom: 1rem;
+        }
+
+        /* ===== BRUTE FORCE TERMINAL ===== */
+        .terminal-container {
+            background: #000; border: 1px solid var(--neon-blue);
+            border-radius: 10px; padding: 2rem; margin-top: 1.5rem;
+            font-family: var(--font-body); position: relative;
+            box-shadow: inset 0 0 30px rgba(0,221,255,0.05), 0 0 20px rgba(0,221,255,0.1);
+        }
+        .terminal-header {
+            border-bottom: 2px dashed rgba(0,221,255,0.3);
+            padding-bottom: 10px; margin-bottom: 20px;
+            display: flex; justify-content: space-between; color: var(--neon-blue);
+            font-size: 0.85rem;
+        }
+        .terminal-dots { display: flex; gap: 6px; }
+        .t-dot { width: 10px; height: 10px; border-radius: 50%; }
+        .t-dot.r { background: #ff5f56; }
+        .t-dot.y { background: #ffbd2e; }
+        .t-dot.g { background: #27c93f; }
+
+        .password-input {
+            width: 100%; background: rgba(0,221,255,0.04);
+            border: 1px solid var(--neon-blue); color: #fff;
+            padding: 14px; font-size: 1.1rem; font-family: var(--font-body);
+            border-radius: 6px; outline: none; transition: all 0.3s; margin-bottom: 10px;
+        }
+        .password-input:focus { box-shadow: 0 0 15px rgba(0,221,255,0.3); }
+
+        /* Strength Meter */
+        .strength-meter { margin-bottom: 1.5rem; }
+        .strength-bar-wrap {
+            height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden; margin-top: 6px;
+        }
+        .strength-bar { height: 100%; width: 0; border-radius: 3px; transition: width 0.4s, background 0.4s; }
+        .strength-text { font-size: 0.75rem; color: var(--text-muted); margin-top: 4px; }
+
+        .crack-visuals { background: rgba(10,15,18,0.8); border: 1px solid #1a1a1a; padding: 20px; border-radius: 6px; min-height: 200px; }
+        .progress-bar {
+            height: 18px; background: #0a0a0a; border: 1px solid var(--neon-green);
+            border-radius: 10px; overflow: hidden; margin-bottom: 12px;
+        }
+        .progress-fill {
+            height: 100%; width: 0%;
+            background: linear-gradient(90deg, #005615, var(--neon-green));
+            transition: width 0.1s linear;
+        }
+        .stats-hud {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 15px;
+            margin-top: 15px; font-size: 0.9rem; color: var(--text-muted);
+        }
+        .stat-value { color: var(--neon-blue); font-family: var(--font-heading); font-size: 1.2rem; }
+        .terminal-log {
+            margin-top: 18px; height: 120px; overflow-y: hidden;
+            border: 1px solid #1a1a1a; padding: 10px; background: #050505;
+            color: var(--neon-green); font-size: 0.8rem; text-align: left;
+        }
+        .cursor { animation: blink 1s step-end infinite; }
+        @keyframes blink { 50% { opacity: 0; } }
+        .glitch-text {
+            color: var(--neon-red); font-family: var(--font-heading);
+            font-size: 2rem; text-align: center;
+            text-shadow: 2px 2px 0px var(--neon-blue), -2px -2px 0px #fff;
+            animation: glitch 0.2s linear infinite;
+        }
+        @keyframes glitch {
+            0% { transform: translate(0) }
+            20% { transform: translate(-2px, 2px) }
+            40% { transform: translate(-2px, -2px) }
+            60% { transform: translate(2px, 2px) }
+            80% { transform: translate(2px, -2px) }
+            100% { transform: translate(0) }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="navbar">
+            <div class="logo"><i class="fas fa-gamepad"></i> CYBER ARCADE</div>
+            <ul class="nav-links">
+                <li><a href="index.html">Home</a></li>
+                <li><a href="leaderboard.html">Leaderboard</a></li>
+            </ul>
+            <div class="user-snippet">
+                <i class="fas fa-user-astronaut"></i>
+                <span class="user-name-display">Guest</span>
+                <span class="user-xp"><span class="user-xp-display">0 XP</span></span>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <div class="game-container" style="max-width: 800px;">
+            <div class="game-header">
+                <h2><i class="fas fa-unlock-keyhole" style="color:var(--neon-green)"></i> Brute Force Core</h2>
+                <div class="xp-reward"><i class="fas fa-bolt"></i> Reward: +350 XP</div>
+            </div>
+
+            <!-- AI Badge -->
+            <div style="text-align:center; margin-bottom: 1rem;">
+                <span class="ai-badge-inline"><i class="fas fa-lock"></i> AI DEFENDER ENGINE — ENTROPY ANALYSIS</span>
+            </div>
+
+            <!-- ===== HOW TO PLAY ===== -->
+            <div class="how-to-banner">
+                <div class="how-to-icon"><i class="fas fa-info"></i></div>
+                <div class="how-to-content" style="flex:1">
+                    <h4>HOW TO PLAY — BRUTE FORCE CORE</h4>
+                    <div class="how-to-steps-inline">
+                        <span class="step-chip"><span class="chip-num">1</span> Type any password in the field</span>
+                        <span class="step-chip"><span class="chip-num">2</span> Watch the password strength meter</span>
+                        <span class="step-chip"><span class="chip-num">3</span> Click "Initialize Attack" to simulate</span>
+                        <span class="step-chip"><span class="chip-num">4</span> See real-time crack attempts in terminal</span>
+                        <span class="step-chip"><span class="chip-num">5</span> Longer passwords = more XP earned!</span>
+                    </div>
+                    <div class="tip-tag"><i class="fas fa-lightbulb"></i> Tip: A 12-char mix of letters, numbers & symbols can take centuries to crack!</div>
+                </div>
+            </div>
+
+            <div class="terminal-container">
+                <div class="terminal-header">
+                    <div class="terminal-dots">
+                        <div class="t-dot r"></div>
+                        <div class="t-dot y"></div>
+                        <div class="t-dot g"></div>
+                    </div>
+                    <span>hydra_core_v9.2.exe</span>
+                    <span>Target: 192.168.1.100:8080/admin</span>
+                </div>
+
+                <input type="text" id="pass-input" class="password-input" placeholder="Enter target password to simulate cracking..." autocomplete="off">
+
+                <!-- Strength Meter -->
+                <div class="strength-meter">
+                    <div style="display:flex; justify-content:space-between; font-size:0.75rem; color:var(--text-muted);">
+                        <span>Password Strength</span>
+                        <span id="strength-label">—</span>
+                    </div>
+                    <div class="strength-bar-wrap">
+                        <div class="strength-bar" id="strength-bar"></div>
+                    </div>
+                    <div class="strength-text" id="strength-hint">Enter a password to analyze its strength</div>
+                </div>
+
+                <button class="btn-neon btn-neon-green" id="btn-attack"><i class="fas fa-hammer"></i> Initialize Attack</button>
+
+                <div class="crack-visuals" id="crack-visuals" style="display: none; margin-top: 1.5rem;">
+                    <h3 style="color: var(--neon-blue); margin-bottom: 12px;"><i class="fas fa-microchip"></i> Processing Entropy...</h3>
+                    <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+                    <div class="stats-hud">
+                        <div><div>Entropy Score</div><div class="stat-value" id="entropy-score">--</div></div>
+                        <div><div>Estimated Time to Crack</div><div class="stat-value" id="time-to-crack">--</div></div>
+                        <div><div>Attempts / Sec</div><div class="stat-value">1.4 × 10<sup>9</sup></div></div>
+                        <div><div>Attempts So Far</div><div class="stat-value" id="attempt-count">0</div></div>
+                    </div>
+                    <div class="terminal-log" id="terminal-log">&gt; starting attack module...<br></div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="js/main.js"></script>
+    <script src="js/bruteForce.js"></script>
+    <script>
+        // Live password strength meter
+        const passInput = document.getElementById('pass-input');
+        const strengthBar = document.getElementById('strength-bar');
+        const strengthLabel = document.getElementById('strength-label');
+        const strengthHint = document.getElementById('strength-hint');
+
+        passInput.addEventListener('input', () => {
+            const pw = passInput.value;
+            let score = 0;
+            if (pw.length >= 6) score++;
+            if (pw.length >= 10) score++;
+            if (pw.length >= 14) score++;
+            if (/[A-Z]/.test(pw)) score++;
+            if (/[0-9]/.test(pw)) score++;
+            if (/[^A-Za-z0-9]/.test(pw)) score++;
+
+            const levels = [
+                { max: 1, label: 'Very Weak', color: '#ff2244', hint: 'Way too short — cracked instantly!' },
+                { max: 2, label: 'Weak',      color: '#ff7700', hint: 'Simple passwords are cracked in milliseconds.' },
+                { max: 3, label: 'Fair',      color: '#ffd700', hint: 'Add uppercase & symbols to strengthen it.' },
+                { max: 4, label: 'Good',      color: '#00e5ff', hint: 'Getting better! Add more length.' },
+                { max: 5, label: 'Strong',    color: '#00ff41', hint: 'Great! This would take years to crack.' },
+                { max: 6, label: 'Excellent', color: '#b300ff', hint: 'Military-grade! Near-impossible to brute force.' }
+            ];
+
+            if (!pw) {
+                strengthBar.style.width = '0%'; strengthLabel.textContent = '—'; strengthHint.textContent = 'Enter a password to analyze its strength'; return;
+            }
+
+            const lvl = levels[Math.min(score, levels.length - 1)];
+            const pct = Math.round(((score + 1) / 7) * 100);
+            strengthBar.style.width = pct + '%';
+            strengthBar.style.background = lvl.color;
+            strengthLabel.textContent = lvl.label;
+            strengthLabel.style.color = lvl.color;
+            strengthHint.textContent = lvl.hint;
+        });
+    </script>
+</body>
+</html>

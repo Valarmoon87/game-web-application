@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cyber Arcade | Match the Design</title>
+    <meta name="description" content="Match the Design — reconstruct encrypted visual patterns in Cyber Arcade.">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .md-wrapper { max-width: 900px; margin: 0 auto; }
+
+        .md-hud {
+            display: flex; justify-content: space-between; align-items: center;
+            background: rgba(0,0,0,0.5);
+            border: 1px solid rgba(179,0,255,0.3);
+            border-radius: 14px; padding: 12px 20px;
+            margin-bottom: 1.5rem; flex-wrap: wrap; gap: 10px;
+        }
+        .md-stat { text-align: center; min-width: 80px; }
+        .md-stat .lbl { font-size: 0.6rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1.5px; font-family: var(--font-heading); }
+        .md-stat .val { font-size: 1.5rem; font-weight: 700; font-family: var(--font-heading); color: #fff; }
+        .val.gold   { color: #ffd700; text-shadow: 0 0 10px #ffd700; }
+        .val.green  { color: var(--neon-green); text-shadow: 0 0 10px var(--neon-green); }
+        .val.cyan   { color: #00e5ff; text-shadow: 0 0 10px #00e5ff; }
+        .val.purple { color: var(--neon-blue); text-shadow: 0 0 10px var(--neon-blue); }
+
+        /* Grid layout */
+        .grids-row {
+            display: flex;
+            gap: 2rem;
+            align-items: flex-start;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 1.5rem;
+        }
+
+        .grid-panel {
+            flex: 1; min-width: 260px; max-width: 400px;
+            background: rgba(0,0,0,0.4);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 16px;
+            padding: 1.2rem;
+            text-align: center;
+        }
+
+        .grid-panel-title {
+            font-family: var(--font-heading);
+            font-size: 0.7rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            margin-bottom: 1rem;
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+        }
+        .grid-panel-title.target { color: var(--neon-green); }
+        .grid-panel-title.player { color: var(--neon-blue); }
+
+        .cell-grid {
+            display: grid;
+            gap: 5px;
+            justify-content: center;
+            margin: 0 auto;
+        }
+
+        .grid-cell {
+            width: 52px; height: 52px;
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.12);
+            transition: all 0.18s ease;
+            cursor: default;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .grid-cell.interactive {
+            cursor: pointer;
+        }
+
+        .grid-cell.interactive:hover {
+            transform: scale(1.08);
+            border-color: rgba(255,255,255,0.4);
+            box-shadow: 0 0 14px rgba(179,0,255,0.4);
+        }
+
+        .grid-cell.matched {
+            box-shadow: 0 0 12px rgba(0,255,65,0.5);
+            border-color: var(--neon-green) !important;
+        }
+
+        .grid-cell::after {
+            content: '✓';
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.4rem;
+            color: rgba(255,255,255,0.9);
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+        .grid-cell.matched::after { opacity: 1; }
+
+        /* Progress bar */
+        .match-progress {
+            background: rgba(0,0,0,0.5);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 10px;
+            padding: 10px 20px;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .match-progress-label {
+            font-family: var(--font-heading); font-size: 0.7rem;
+            color: var(--text-muted); white-space: nowrap;
+        }
+        .match-bar-wrap {
+            flex: 1; height: 10px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        .match-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--neon-blue), var(--neon-green));
+            border-radius: 10px;
+            width: 0%;
+            transition: width 0.4s ease;
+            box-shadow: 0 0 8px var(--neon-green);
+        }
+        .match-pct {
+            font-family: var(--font-heading); font-size: 0.8rem;
+            color: var(--neon-green); font-weight: 700; min-width: 38px;
+        }
+
+        /* Color palette */
+        .palette-row {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1.2rem;
+            flex-wrap: wrap;
+        }
+        .palette-swatch {
+            width: 32px; height: 32px; border-radius: 8px;
+            border: 2px solid rgba(255,255,255,0.1);
+            transition: all 0.15s;
+            cursor: pointer;
+        }
+        .palette-swatch:hover { transform: scale(1.2); border-color: #fff; }
+        .palette-swatch.selected { border-color: #fff; box-shadow: 0 0 10px rgba(255,255,255,0.6); transform: scale(1.15); }
+
+        /* Controls */
+        .md-controls {
+            display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;
+        }
+
+        /* Difficulty */
+        .diff-btns { display: flex; gap: 8px; align-items: center; }
+        .diff-btn { padding: 8px 16px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.04); color: var(--text-muted); font-family: var(--font-heading); font-size: 0.7rem; cursor: pointer; letter-spacing: 1px; text-transform: uppercase; transition: all 0.2s; }
+        .diff-btn.active { border-color: var(--neon-blue); color: var(--neon-blue); background: rgba(179,0,255,0.1); }
+        .diff-btn:hover:not(.active) { border-color: rgba(255,255,255,0.3); color: #fff; }
+
+        /* Game over overlay */
+        #md-gameover {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.92);
+            backdrop-filter: blur(12px);
+            display: flex; align-items: center; justify-content: center;
+            z-index: 5000; opacity: 0; pointer-events: none;
+            transition: opacity 0.4s;
+        }
+        #md-gameover.show { opacity: 1; pointer-events: auto; }
+        .md-go-panel {
+            background: linear-gradient(135deg, rgba(15,10,40,0.99), rgba(11,7,26,0.99));
+            border: 1px solid rgba(179,0,255,0.4);
+            border-radius: 24px; padding: 2.5rem;
+            max-width: 460px; width: 92%; text-align: center;
+            box-shadow: 0 0 60px rgba(179,0,255,0.35);
+            animation: mdPopIn 0.5s cubic-bezier(0.175,0.885,0.32,1.275) both;
+        }
+        @keyframes mdPopIn { from { opacity:0; transform: scale(0.7) translateY(20px); } to { opacity:1; transform: scale(1) translateY(0); } }
+        .md-go-icon { font-size: 4rem; margin-bottom: 1rem; display: block; animation: mdPopIn 0.5s 0.2s both; }
+        .md-go-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 1.5rem 0; }
+        .md-go-stat { background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.06); border-radius: 10px; padding: 12px; }
+        .md-go-stat .sl { font-size: 0.6rem; color: var(--text-muted); letter-spacing: 1px; font-family: var(--font-heading); text-transform: uppercase; }
+        .md-go-stat .sv { font-size: 1.2rem; font-weight: 700; font-family: var(--font-heading); color: #fff; margin-top: 4px; }
+
+        /* Completion flash */
+        @keyframes cellMatch {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.15); }
+            100% { transform: scale(1); }
+        }
+        .cell-match-anim { animation: cellMatch 0.3s ease; }
+
+        /* Timer warning */
+        .val.timer-warn { color: var(--neon-red) !important; text-shadow: 0 0 10px var(--neon-red) !important; animation: timerPulse 0.6s infinite; }
+        @keyframes timerPulse { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="navbar">
+            <div class="logo"><i class="fas fa-gamepad"></i> CYBER ARCADE</div>
+            <ul class="nav-links">
+                <li><a href="index.html">Home</a></li>
+                <li><a href="leaderboard.html">Leaderboard</a></li>
+                <li><a href="profile.html">Profile</a></li>
+            </ul>
+            <div class="user-snippet">
+                <i class="fas fa-user-astronaut"></i>
+                <span class="user-name-display">Guest</span>
+                <span class="user-xp"><span class="user-xp-display">0 XP</span></span>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <div class="md-wrapper">
+            <h1 class="section-title" style="font-size:1.8rem;margin-bottom:0.4rem;">
+                <i class="fas fa-palette" style="color:var(--neon-blue)"></i> MATCH THE <span>DESIGN</span>
+            </h1>
+            <p style="text-align:center;color:var(--text-muted);font-size:0.8rem;margin-bottom:1.5rem;">
+                Reconstruct the target pattern — click cells to cycle colors, match perfectly to win!
+            </p>
+
+            <!-- HUD -->
+            <div class="md-hud">
+                <div class="md-stat">
+                    <div class="lbl">Score</div>
+                    <div class="val gold" id="md-score">0</div>
+                </div>
+                <div class="md-stat">
+                    <div class="lbl">Level</div>
+                    <div class="val cyan" id="md-level">1</div>
+                </div>
+                <div class="md-stat">
+                    <div class="lbl">Moves Left</div>
+                    <div class="val purple" id="md-moves">—</div>
+                </div>
+                <div class="md-stat">
+                    <div class="lbl">Time</div>
+                    <div class="val green" id="md-timer">60</div>
+                </div>
+                <div class="md-stat">
+                    <div class="lbl">Matched</div>
+                    <div class="val" id="md-matched">0/0</div>
+                </div>
+            </div>
+
+            <!-- Progress -->
+            <div class="match-progress">
+                <span class="match-progress-label"><i class="fas fa-chart-simple"></i> MATCH PROGRESS</span>
+                <div class="match-bar-wrap">
+                    <div class="match-bar-fill" id="match-bar"></div>
+                </div>
+                <span class="match-pct" id="match-pct">0%</span>
+            </div>
+
+            <!-- Grids row -->
+            <div class="grids-row">
+                <div class="grid-panel">
+                    <div class="grid-panel-title target">
+                        <i class="fas fa-bullseye"></i> TARGET PATTERN
+                    </div>
+                    <div class="cell-grid" id="target-grid"></div>
+                </div>
+                <div class="grid-panel">
+                    <div class="grid-panel-title player">
+                        <i class="fas fa-pen-to-square"></i> YOUR DESIGN
+                    </div>
+                    <div class="cell-grid" id="player-grid"></div>
+                    <!-- Palette -->
+                    <div style="margin-top:1rem;">
+                        <div style="font-family:var(--font-heading);font-size:0.6rem;color:var(--text-muted);letter-spacing:2px;margin-bottom:0.5rem;">ACTIVE COLOR</div>
+                        <div class="palette-row" id="palette-row"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Controls -->
+            <div class="md-controls">
+                <div class="diff-btns">
+                    <span style="font-size:0.75rem;color:var(--text-muted);font-family:var(--font-heading)">DIFFICULTY:</span>
+                    <button class="diff-btn active" id="d-easy"   onclick="setMDDifficulty('easy')">Easy</button>
+                    <button class="diff-btn"           id="d-medium" onclick="setMDDifficulty('medium')">Medium</button>
+                    <button class="diff-btn"           id="d-hard"   onclick="setMDDifficulty('hard')">Hard</button>
+                </div>
+                <button class="btn-neon" id="md-start-btn" onclick="startMDGame()">
+                    <i class="fas fa-play"></i> Launch Protocol
+                </button>
+                <a href="index.html" class="btn-neon btn-neon-green">
+                    <i class="fas fa-home"></i> HQ
+                </a>
+            </div>
+        </div>
+    </main>
+
+    <!-- Game Over -->
+    <div id="md-gameover">
+        <div class="md-go-panel">
+            <span class="md-go-icon" id="md-go-icon">🎨</span>
+            <h2 style="font-family:var(--font-heading);letter-spacing:3px;margin-bottom:0.5rem;" id="md-go-title">PATTERN MATCHED!</h2>
+            <p style="color:var(--text-muted);font-size:0.85rem;margin-bottom:0.5rem;" id="md-go-sub">Visual reconstruction complete</p>
+            <div class="md-go-stats">
+                <div class="md-go-stat">
+                    <div class="sl">Final Score</div>
+                    <div class="sv" id="md-go-score" style="color:#ffd700">0</div>
+                </div>
+                <div class="md-go-stat">
+                    <div class="sl">Accuracy</div>
+                    <div class="sv" id="md-go-acc" style="color:var(--neon-green)">0%</div>
+                </div>
+                <div class="md-go-stat">
+                    <div class="sl">Moves Used</div>
+                    <div class="sv" id="md-go-moves" style="color:#00e5ff">0</div>
+                </div>
+                <div class="md-go-stat">
+                    <div class="sl">XP Earned</div>
+                    <div class="sv" id="md-go-xp" style="color:var(--neon-blue)">+0</div>
+                </div>
+            </div>
+            <div style="display:flex;gap:12px;justify-content:center;">
+                <button class="btn-neon" onclick="startMDGame()"><i class="fas fa-redo"></i> Again</button>
+                <a href="index.html" class="btn-neon btn-neon-green"><i class="fas fa-home"></i> Dashboard</a>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/main.js"></script>
+    <script>
+    // =============================================
+    //  MATCH THE DESIGN — Game Engine
+    // =============================================
+
+    const COLORS = [
+        { hex: '#ff007b', name: 'CRIMSON' },
+        { hex: '#00e5ff', name: 'CYAN' },
+        { hex: '#b300ff', name: 'PLASMA' },
+        { hex: '#00ff41', name: 'MATRIX' },
+        { hex: '#ffd700', name: 'GOLD' },
+        { hex: '#ff6b35', name: 'FIRE' },
+        { hex: '#7c3aed', name: 'VOID' },
+        { hex: '#06b6d4', name: 'ELECTRIC' }
+    ];
+
+    const DIFFICULTY_CFG = {
+        easy:   { cols: 4, rows: 4, colorCount: 3, moves: 40, time: 90,  xpMulti: 1.0 },
+        medium: { cols: 5, rows: 5, colorCount: 5, moves: 35, time: 70,  xpMulti: 1.5 },
+        hard:   { cols: 6, rows: 6, colorCount: 7, moves: 30, time: 55,  xpMulti: 2.5 }
+    };
+
+    let mdState = {
+        running: false,
+        difficulty: 'easy',
+        level: 1,
+        score: 0,
+        targetGrid: [],
+        playerGrid: [],
+        cols: 4, rows: 4,
+        gameColors: [],
+        selectedColor: 0,
+        movesLeft: 40,
+        movesUsed: 0,
+        timer: 90,
+        timerInterval: null,
+        totalCells: 0,
+        matchedCells: 0
+    };
+
+    function setMDDifficulty(d) {
+        mdState.difficulty = d;
+        document.querySelectorAll('.diff-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById('d-' + d)?.classList.add('active');
+    }
+
+    function startMDGame() {
+        clearInterval(mdState.timerInterval);
+        document.getElementById('md-gameover').classList.remove('show');
+
+        const cfg = DIFFICULTY_CFG[mdState.difficulty];
+        mdState.cols = cfg.cols;
+        mdState.rows = cfg.rows;
+        mdState.gameColors = COLORS.slice(0, cfg.colorCount);
+        mdState.movesLeft = cfg.moves;
+        mdState.movesUsed = 0;
+        mdState.timer = cfg.time;
+        mdState.score = 0;
+        mdState.running = true;
+        mdState.selectedColor = 0;
+        mdState.totalCells = cfg.cols * cfg.rows;
+        mdState.matchedCells = 0;
+
+        // Build target grid (random)
+        mdState.targetGrid = Array.from({ length: mdState.rows * mdState.cols }, () =>
+            Math.floor(Math.random() * mdState.gameColors.length)
+        );
+
+        // Build player grid (randomized differently)
+        mdState.playerGrid = Array.from({ length: mdState.rows * mdState.cols }, () =>
+            Math.floor(Math.random() * mdState.gameColors.length)
+        );
+
+        renderGrids();
+        renderPalette();
+        updateMDHUD();
+        updateProgressBar();
+
+        // Timer
+        mdState.timerInterval = setInterval(() => {
+            if (!mdState.running) return;
+            mdState.timer--;
+            document.getElementById('md-timer').textContent = mdState.timer;
+            if (mdState.timer <= 10) {
+                document.getElementById('md-timer').classList.add('timer-warn');
+            }
+            if (mdState.timer <= 0) {
+                endMDGame(false);
+            }
+        }, 1000);
+
+        document.getElementById('md-start-btn').innerHTML = '<i class="fas fa-redo"></i> Restart';
+    }
+
+    function renderGrids() {
+        renderGrid('target-grid', mdState.targetGrid, false);
+        renderGrid('player-grid', mdState.playerGrid, true);
+    }
+
+    function renderGrid(containerId, gridData, interactive) {
+        const container = document.getElementById(containerId);
+        container.innerHTML = '';
+        container.style.gridTemplateColumns = `repeat(${mdState.cols}, 52px)`;
+
+        gridData.forEach((colorIdx, cellIdx) => {
+            const cell = document.createElement('div');
+            cell.className = 'grid-cell' + (interactive ? ' interactive' : '');
+            cell.style.background = mdState.gameColors[colorIdx].hex;
+            cell.dataset.idx = cellIdx;
+
+            if (interactive) {
+                // Check if matched
+                if (colorIdx === mdState.targetGrid[cellIdx]) {
+                    cell.classList.add('matched');
+                }
+                cell.addEventListener('click', () => onCellClick(cellIdx));
+            }
+            container.appendChild(cell);
+        });
+    }
+
+    function renderPalette() {
+        const row = document.getElementById('palette-row');
+        row.innerHTML = '';
+        mdState.gameColors.forEach((color, i) => {
+            const sw = document.createElement('div');
+            sw.className = 'palette-swatch' + (i === mdState.selectedColor ? ' selected' : '');
+            sw.style.background = color.hex;
+            sw.title = color.name;
+            sw.onclick = () => selectColor(i);
+            row.appendChild(sw);
+        });
+    }
+
+    function selectColor(i) {
+        mdState.selectedColor = i;
+        document.querySelectorAll('.palette-swatch').forEach((s, idx) => {
+            s.classList.toggle('selected', idx === i);
+        });
+    }
+
+    function onCellClick(cellIdx) {
+        if (!mdState.running || mdState.movesLeft <= 0) return;
+
+        const wasMatched = mdState.playerGrid[cellIdx] === mdState.targetGrid[cellIdx];
+        mdState.playerGrid[cellIdx] = mdState.selectedColor;
+        mdState.movesLeft--;
+        mdState.movesUsed++;
+
+        // Update score: +10 if newly matched, -5 if was matched and now wrong
+        const isNowMatched = mdState.playerGrid[cellIdx] === mdState.targetGrid[cellIdx];
+        if (isNowMatched && !wasMatched) {
+            mdState.score += 10;
+        } else if (!isNowMatched && wasMatched) {
+            mdState.score = Math.max(0, mdState.score - 5);
+        }
+
+        updateSingleCell(cellIdx);
+        countMatches();
+        updateMDHUD();
+        updateProgressBar();
+
+        if (mdState.movesLeft <= 0 && mdState.matchedCells < mdState.totalCells) {
+            endMDGame(false);
+        } else if (mdState.matchedCells === mdState.totalCells) {
+            // Bonus points for time remaining
+            mdState.score += mdState.timer * 2 + mdState.movesLeft * 3;
+            endMDGame(true);
+        }
+    }
+
+    function updateSingleCell(cellIdx) {
+        const playerGrid = document.getElementById('player-grid');
+        const cells = playerGrid.querySelectorAll('.grid-cell');
+        const cell = cells[cellIdx];
+        if (!cell) return;
+
+        const colorIdx = mdState.playerGrid[cellIdx];
+        cell.style.background = mdState.gameColors[colorIdx].hex;
+        cell.classList.toggle('matched', colorIdx === mdState.targetGrid[cellIdx]);
+        cell.classList.add('cell-match-anim');
+        setTimeout(() => cell.classList.remove('cell-match-anim'), 350);
+    }
+
+    function countMatches() {
+        mdState.matchedCells = mdState.playerGrid.filter((c, i) => c === mdState.targetGrid[i]).length;
+    }
+
+    function updateProgressBar() {
+        const pct = mdState.totalCells > 0 ? Math.round((mdState.matchedCells / mdState.totalCells) * 100) : 0;
+        document.getElementById('match-bar').style.width = pct + '%';
+        document.getElementById('match-pct').textContent = pct + '%';
+    }
+
+    function updateMDHUD() {
+        document.getElementById('md-score').textContent   = mdState.score;
+        document.getElementById('md-level').textContent   = mdState.level;
+        document.getElementById('md-moves').textContent   = mdState.movesLeft;
+        document.getElementById('md-matched').textContent = `${mdState.matchedCells}/${mdState.totalCells}`;
+    }
+
+    function endMDGame(won) {
+        if (!mdState.running) return;
+        mdState.running = false;
+        clearInterval(mdState.timerInterval);
+
+        const cfg = DIFFICULTY_CFG[mdState.difficulty];
+        const accuracy = Math.round((mdState.matchedCells / mdState.totalCells) * 100);
+        const baseXP = won ? 250 : Math.round(accuracy * 1.5);
+        const xpEarned = Math.round(baseXP * cfg.xpMulti);
+
+        if (typeof awardXP === 'function') {
+            awardXP(xpEarned, 'matchdesign', mdState.score);
+        }
+
+        document.getElementById('md-go-icon').textContent  = won ? '🎨' : '💀';
+        document.getElementById('md-go-title').textContent = won ? 'PATTERN MATCHED!' : 'PATTERN FAILED';
+        document.getElementById('md-go-sub').textContent   = won
+            ? `Perfect reconstruction! +${mdState.timer * 2} time bonus earned`
+            : `${accuracy}% matched — ${mdState.totalCells - mdState.matchedCells} cells remain`;
+        document.getElementById('md-go-score').textContent = mdState.score;
+        document.getElementById('md-go-acc').textContent   = accuracy + '%';
+        document.getElementById('md-go-moves').textContent = mdState.movesUsed;
+        document.getElementById('md-go-xp').textContent    = '+' + xpEarned;
+
+        setTimeout(() => {
+            document.getElementById('md-gameover').classList.add('show');
+        }, won ? 600 : 200);
+    }
+
+    // Auto-show idle state
+    document.addEventListener('DOMContentLoaded', () => {
+        // Show example idle pattern
+        mdState.gameColors = COLORS.slice(0, 3);
+        mdState.cols = 4; mdState.rows = 4;
+        mdState.totalCells = 16;
+        const idlePat = Array.from({ length: 16 }, (_, i) => i % 3);
+        mdState.targetGrid = idlePat;
+        mdState.playerGrid = idlePat.map(v => (v + 1) % 3);
+        renderGrids();
+        renderPalette();
+        countMatches();
+        updateProgressBar();
+        updateMDHUD();
+    });
+    </script>
+</body>
+</html>
